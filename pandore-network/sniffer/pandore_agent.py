@@ -14,8 +14,8 @@ __description__ = "The agent is the application which allow to send the network 
 
 # IMPORTS======================================================================
 from pandore_config import *
-from datetime import time
-import pyshark
+import sniffer
+import sender
 import threading
 
 
@@ -27,7 +27,8 @@ def print_project_info():
     print('Project : ' + __project__)
     print('Author: ' + __author__)
     print('Full team: ' + ', '.join(__team__))
-    print('Realised with the school: ' + __school__ + "\n")
+    print('Realised with the school: ' + __school__)
+    print('# ' + '=' * 50)
 
 
 def print_agent_config():
@@ -35,19 +36,12 @@ def print_agent_config():
     print(' CONFIG')
     print('# ' + '=' * 50)
     print('Audited interface: ' + AUDITED_INTERFACE)
-
-
-def print_dns_info(pkt):
-    if pkt.dns.qry_name:
-        print('DNS Request from %s: %s' % (pkt.ip.src, pkt.dns.qry_name))
-    elif pkt.dns.resp_name:
-        print('DNS Response from %s: %s' % (pkt.ip.src, pkt.dns.resp_name))
+    print('Device network: ' + DEVICE_NETWORK)
+    print('# ' + '=' * 50)
 
 
 # MAIN=========================================================================
 print_project_info()
 print_agent_config()
 
-capture = pyshark.LiveCapture(interface=AUDITED_INTERFACE, bpf_filter='udp port 53')
-capture.sniff(packet_count=10)
-capture.apply_on_packets(print_dns_info, timeout=100)
+sniffer.capture()
