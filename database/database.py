@@ -30,11 +30,12 @@ class ServiceRequest(db.Model):
 class Service(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(1000))
+    service = db.Column(db.Integer, db.ForeignKey('service.id'))
 
 
 class Configuration(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     connection_Type = db.Column(db.String(255))
     interface = db.Column(db.String(255))
-
+    configuration = db.Column(db.Integer, db.ForeignKey('server.id'))
 
