@@ -15,7 +15,7 @@ __description__ = "The agent is the application which allow to send the network 
 # IMPORTS======================================================================
 from pandore_config import *
 import sniffer
-import sender
+import pandore_sender
 import threading
 
 
