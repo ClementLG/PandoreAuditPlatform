@@ -14,7 +14,7 @@ __description__ = "The agent is the application which allow to send the network 
 
 # IMPORTS======================================================================
 from pandore_config import *
-import sniffer
+import pandore_sniffer
 import pandore_sender
 import threading
 
@@ -44,4 +44,4 @@ def print_agent_config():
 print_project_info()
 print_agent_config()
 
-sniffer.capture()
+pandore_sniffer.capture()
