@@ -13,6 +13,7 @@ __description__ = "The agent is the application which allow to send the network 
                   "in a second application which will carry out more specific and cumbersome processing."
 
 # IMPORTS======================================================================
+import asyncio.exceptions
 from pandore_config import *
 from pandore_sniffer import PandoreSniffer
 
@@ -43,4 +44,9 @@ print_project_info()
 print_agent_config()
 
 capture = PandoreSniffer("1st_capture", 15, "essaie voir si ok", "cablé normal")
-capture.run()
+try:
+    capture.run()
+except asyncio.exceptions.TimeoutError:
+    print("\nEnd of the capture !")
+except Exception as e:
+    print("An error occurred ! \n"+e)

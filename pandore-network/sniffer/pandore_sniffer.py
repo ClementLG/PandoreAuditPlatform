@@ -12,8 +12,8 @@ import math
 
 # VARIABLES=====================================================================
 
-data_up = 0
-data_down = 0
+# DNS sniffed dictionary
+DNS = {}
 
 
 # CLASS=========================================================================
@@ -25,58 +25,46 @@ class PandoreSniffer:
         self.db = pandore_sender.PandoreSender(DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB)
         self.db.create_capture(name, datetime.datetime.now(), None, description, AUDITED_INTERFACE, cnx_type)
         self.capture_id = self.db.get_capture_id(name)
-        self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, use_json=True,
-                                       bpf_filter=f'dst net {DEVICE_NETWORK} or src net {DEVICE_NETWORK}')
-        self.cap.sniff(packet_count=10)
+        self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, use_json=True, bpf_filter=f'dst net {DEVICE_NETWORK} or src net {DEVICE_NETWORK}')
+        self.cap.sniff(packet_count=5)
 
     def run(self):
         self.cap.apply_on_packets(self.pkt_to_db, timeout=self.duration)
 
     def pkt_to_db(self, pkt):
-
         try:
-            pck_to_json = {
-                "timestamp": datetime.datetime.now().timestamp(),
-                "IP_SRC": pkt.ip.src,
-                "IP_DST": pkt.ip.dst,
-                "DIRECTION": determine_direction(pkt.ip.src),
-                "L4_PROT": pkt.transport_layer,
-                "HIGHEST_LAYER": pkt.highest_layer,
-                "PACKET_SIZE": count_data(pkt.length, determine_direction(pkt.ip.src))
-            }
-            json_dump = json.dumps(pck_to_json)
-            print(json_dump)
-            print("UP :" + convert_size(data_up) + " | " + "DOWN :" + convert_size(data_down))
+            print(pkt_to_json(pkt))
             self.db.create_request(pkt.length, determine_direction(pkt.ip.src), pkt.highest_layer, 1, 3,
                                    self.capture_id)
-        except:
-            print("non l3 packet")
+        except Exception as e:
+            print("A error occurred : \n" + e)
 
 
 # FUNCTIONS=====================================================================
 
-def print_dns_info(pkt):
-    if pkt.dns.qry_name:
-        print('DNS Request from %s: %s' % (pkt.ip.src, pkt.dns.qry_name))
-    elif pkt.dns.resp_name:
-        print('DNS Response from %s: %s' % (pkt.ip.src, pkt.dns.resp_name))
+def pkt_to_json(pkt):
+    try:
+        pck_to_json = {
+            "timestamp": datetime.datetime.now().timestamp(),
+            "IP_SRC": pkt.ip.src,
+            "IP_DST": pkt.ip.dst,
+            "DIRECTION": determine_direction(pkt.ip.src),
+            "L4_PROT": pkt.transport_layer,
+            "HIGHEST_LAYER": pkt.highest_layer,
+            "PACKET_SIZE": pkt.length
+        }
+        json_dump = json.dumps(pck_to_json)
+        return json_dump
+    except Exception as e:
+        print(f"Packet below L3 detected. Excluded from the output.({pkt.highest_layer})")
+        # print(e)
 
 
-def count_data(pkt_length, direction):
-    if direction is "1":
-        global data_up
-        data_up += pkt_length
-    elif direction is "0":
-        global data_down
-        data_down += pkt_length
-    return pkt_length
-
-
-def determine_direction(src_ip):
-    if ipaddress.ip_address(src_ip) in ipaddress.ip_network(DEVICE_NETWORK):
-        return "1"
+def refactor_protocol_name(original_name, srcport, dstport):
+    if (original_name is "TLS") and ((srcport is 443) or (dstport is 443)):
+        return "HTTPS"
     else:
-        return "0"
+        return original_name
 
 
 def convert_size(size_bytes):
@@ -89,19 +77,15 @@ def convert_size(size_bytes):
     return "%s %s" % (s, size_name[i])
 
 
-def print_formatted_infos(pkt):
-    try:
-        pck_to_json = {
-            "timestamp": datetime.datetime.now().timestamp(),
-            "IP_SRC": pkt.ip.src,
-            "IP_DST": pkt.ip.dst,
-            "DIRECTION": determine_direction(pkt.ip.src),
-            "L4_PROT": pkt.transport_layer,
-            "HIGHEST_LAYER": pkt.highest_layer,
-            "PACKET_SIZE": count_data(pkt.length, determine_direction(pkt.ip.src))
-        }
-        json_dump = json.dumps(pck_to_json)
-        print(json_dump)
-        print("UP :" + convert_size(data_up) + " | " + "DOWN :" + convert_size(data_down))
-    except:
-        print("non l3 packet")
+def sniff_dns_info(pkt):
+    if pkt.dns.qry_name:
+        print('DNS Request from %s: %s' % (pkt.ip.src, pkt.dns.qry_name))
+    elif pkt.dns.resp_name:
+        print('DNS Response from %s: %s' % (pkt.ip.src, pkt.dns.resp_name))
+
+
+def determine_direction(src_ip):
+    if ipaddress.ip_address(src_ip) in ipaddress.ip_network(DEVICE_NETWORK):
+        return "1"
+    else:
+        return "0"

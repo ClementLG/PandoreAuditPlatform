@@ -1,4 +1,6 @@
 Audited interface: Ethernet
+truc interessant : pkt[pkt.transport_layer].dstport
+
 Packet (Length: 75)
 Layer ETH:
 	src: 2c:f0:5d:e8:39:49
