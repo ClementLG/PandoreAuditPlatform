@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Services list - Pandore</title>
+        <link rel="stylesheet" href="source/bootstrap/css/bootstrap.css">
+        <link rel="stylesheet" href="source/bootstrap/icon/bootstrap-icons.css">
+        <link rel="stylesheet" href="source/bootstrap/css/datatables.min.css">
+        <link rel="stylesheet" href="source/bootstrap/css/bootstrap-select.min.css">
+		<script src="source/jquery/jquery-3.6.0.min.js"></script>
+        <script src="source/bootstrap/js/bootstrap.bundle.min.js"></script>
+        <script src="source/bootstrap/js/datatables.min.js"></script>
+        <script src="source/bootstrap/js/bootstrap-select.min.js"></script>
+    </head>
+    <body class="d-flex flex-column min-vh-100">
+        <header>
+            <nav class="navbar navbar-expand-lg navbar-dark bg-imt-blue">
+                <div class="container-fluid">
+                    <a class="navbar-brand me-5" href="#">Pandore</a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarText">
+                        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="index.html">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="saved_captures.html">Saved captures</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="services.html">Services</a>
+                        </li>
+                        </ul>
+                        <span class="navbar-text">
+                        3<sup>rd</sup> year project
+                        </span>
+                    </div>
+                </div>
+            </nav>
+        </header>
+        <content>
+            <div class="container-fluid px-5 py-5">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="card shadow mb-3">
+                            <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
+                                <div class="row mb-5">
+                                    <div class="col-sm">
+                                        <span class="" style="font-size: 30px;">
+                                            Services list
+                                          </span>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <button class="btn btn-imt-green" data-bs-toggle="modal" data-bs-target="#modalAddService">
+                                            <span class="bi bi-plus"></span> Add new service
+                                        </button>
+                                    </div>
+                                </div>
+                                <table id="services" class="table table-hover" style="width:100%">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th width="1px"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr onmouseover="" style="cursor: pointer;" onclick="window.location.href='service.html'">
+                                            <td>Amazon</td>
+                                            <td><span class="bi bi-arrow-right-square-fill"></span></td>
+                                        </tr>
+                                        <tr onmouseover="" style="cursor: pointer;" onclick="window.location.href='service.html'">
+                                            <td>Facebook</td>
+                                            <td><span class="bi bi-arrow-right-square-fill"></span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="card shadow mb-3">
+                            <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
+                                <div class="row mb-5">
+                                  <span class="" style="font-size: 30px;">
+                                    Unknown DNS(s)
+                                  </span>
+                                </div>
+                                <table class="table table-hover" style="width:100%">
+                                    <thead>
+                                        <tr>
+                                            <th>Value</th>
+                                            <th width="1px"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr onmouseover="" style="cursor: pointer;" onclick="assignDNS('dns.google.com',1)">
+                                            <td>dns.google.com</td>
+                                            <td><span class="bi bi-gear-fill"></span></td>
+                                        </tr>
+                                        <tr onmouseover="" style="cursor: pointer;" onclick="assignDNS('dns.facebook.com',2)">
+                                            <td>dns.facebook.com</td>
+                                            <td><span class="bi bi-gear-fill"></span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card shadow mb-3">
+                            <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
+                                <div class="row mb-5">
+                                  <span class="" style="font-size: 30px;">
+                                    Unknown server(s)
+                                  </span>
+                                </div>
+                                <table class="table table-hover" style="width:100%">
+                                    <thead>
+                                        <tr>
+                                            <th>Value</th>
+                                            <th width="1px"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr onmouseover="" style="cursor: pointer;" onclick="assignServer('10.65.21.54',1)">
+                                            <td>10.65.21.54</td>
+                                            <td><span class="bi bi-gear-fill"></span></td>
+                                        </tr>
+                                        <tr onmouseover="" style="cursor: pointer;" onclick="assignServer('10.65.98.42',2)">
+                                            <td>10.65.98.42</td>
+                                            <td><span class="bi bi-gear-fill"></span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </content>
+        <footer class="mt-auto bg-imt-green py-3 px-3">
+            <div class="row">
+                <div class="col-sm">
+                    <img src="image/logo_imt.png" style="max-height: 60px;">
+                </div>
+                <div class="col-sm text-white">
+                    <div class="row d-flex justify-content-center">
+                        Students : Clément LE GRUIEC, Salma CHAHMI, Nathan OLBORSKI & Hugo HOUILLON
+                    </div>
+                    <div class="row d-flex justify-content-center">
+                        Professors : Xavier LAGRANGE & Julien SAINT MARTIN
+                    </div>
+                </div>
+                <div class="col-sm">
+                    
+                </div>
+            </div>
+        </footer>
+
+        <div class="modal fade" id="modalAssignDNS" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                  <form action="services.html" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Assign DNS to service</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body">
+                        <div class="text-danger"><p><strong>Please assign the following DNS to an existing service</strong></p></div>
+                        <div id="assignDnsValue"></div>
+                        <input type="hidden" name="assignDnsID" id="assignDnsID" value="">
+                        <input type="hidden" name="actionType" id="actionType" value="assignDns">
+                        <label for="assignDnsService"><strong>Service : </strong></label>
+                        <select class="selectpicker" id="assignDnsService" name="assignDnsService" data-live-search="true" title="Select a service...">
+                            <option value="1">Amazon</option>
+                            <option value="2">Facebook</option>
+                        </select>                              
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-imt-green">Validate</button>
+                      </div>
+                  </form>
+              </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="modalAssignServer" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                  <form action="services.html" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Assign server to service</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body">
+                        <div class="text-danger"><p><strong>Please assign the following server to an existing service</strong></p></div>
+                        <div id="assignServerValue"></div>
+                        <input type="hidden" name="assignServerID" id="assignServerID" value="">
+                        <input type="hidden" name="actionType" id="actionType" value="assignServer">
+                        <label for="assignServerService"><strong>Service : </strong></label>
+                        <select class="selectpicker" id="assignServerService" name="assignServerService" data-live-search="true" title="Select a service...">
+                            <option value="1">Amazon</option>
+                            <option value="2">Facebook</option>
+                        </select>                              
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-imt-green">Validate</button>
+                      </div>
+                  </form>
+              </div>
+            </div>
+        </div>
+        
+        <div class="modal fade" id="modalAddService" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                  <form action="services.html" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title">New service</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body">
+                        <input type="hidden" name="actionType" id="actionType" value="addService">
+                        <label for="addServiceName"><strong>Service name : </strong></label>
+                        <input type="text" class="form-control" id="addServiceName" name="addServiceName">                          
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-imt-green">Validate</button>
+                      </div>
+                  </form>
+              </div>
+            </div>
+        </div>
+
+    </body>
+</html>
+
+<script>
+    $('select').selectpicker();
+
+    $(document).ready(function() {
+        $('#services').DataTable();
+    } );
+
+    function assignDNS(dns, ID){
+        document.getElementById('assignDnsValue').innerHTML = '<strong>Value :</strong> ' + dns;
+        document.getElementById('assignDnsID').value = ID;
+        $("#modalAssignDNS").modal('show')
+    }
+
+    function assignServer(server, ID){
+        document.getElementById('assignServerValue').innerHTML = '<strong>Value :</strong> ' + server;
+        document.getElementById('assignServerID').value = ID;
+        $("#modalAssignServer").modal('show')
+    }
+</script>
