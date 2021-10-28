@@ -40,8 +40,8 @@ CREATE TABLE Capture_Request(
 	CaptureRequest_Direction TINYINT NOT NULL, /* 0 = DOWN, 1 = UP */ 
 	CaptureRequest_DateTime TIMESTAMP NOT NULL,
 	CaptureRequest_Protocol VARCHAR(255) NOT NULL,
-	CaptureRequest_Server INT NOT NULL,
-	CaptureRequest_DNS INT NOT NULL,
+	CaptureRequest_Server INT NULL,
+	CaptureRequest_DNS INT NULL,
 	CaptureRequest_Capture INT NOT NULL,
 	CONSTRAINT Request_Server FOREIGN KEY (CaptureRequest_Server) REFERENCES Server(Server_ID),
 	CONSTRAINT Request_DNS FOREIGN KEY (CaptureRequest_DNS) REFERENCES DNS(DNS_ID),
@@ -180,6 +180,7 @@ END;
 CREATE PROCEDURE CreateCapture(IN Name VARCHAR(255), IN StartTime DATETIME, IN EndTime DATETIME, IN Description VARCHAR(1000), IN Interface VARCHAR(1000), IN ConnectionType VARCHAR(1000))
 BEGIN
 	INSERT INTO Capture (Capture_Name, Capture_StartTime, Capture_EndTime, Capture_Description, Capture_Interface, Capture_ConnectionType) VALUES (Name, StartTime, EndTime, Description, Interface, ConnectionType);
+	SELECT Capture_ID FROM Capture WHERE Capture_Name = Name AND Capture_StartTime = StartTime AND (CASE WHEN EndTime IS NULL THEN EndTime IS NULL ELSE Capture_EndTime = EndTime END) AND (CASE WHEN Description IS NULL THEN Description IS NULL ELSE Capture_Description = Description END) AND (CASE WHEN Interface IS NULL THEN Interface IS NULL ELSE Capture_Interface = Interface END) AND (CASE WHEN ConnectionType IS NULL THEN ConnectionType IS NULL ELSE Capture_ConnectionType = ConnectionType END);
 END;
 
 CREATE PROCEDURE ReadAllCaptures()
@@ -220,22 +221,53 @@ BEGIN
 			CALL CreateDNS(DNS, NULL);
 		END IF;
 		CALL CreateRequest(PacketSize, Direction, Protocol, (SELECT Server_ID FROM Server WHERE LOWER(Server_Address) = LOWER(Server)), (SELECT DNS_ID FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS)), Capture);
+	ELSE
+		IF (Server IS NULL OR Server = '') THEN
+			IF (DNS IS NULL OR DNS = '') THEN
+				CALL CreateRequest(PacketSize, Direction, Protocol, NULL, NULL, Capture);
+			ELSE
+				SET @DNS_ID = (SELECT COUNT(*) FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS));
+				IF(@DNS_ID = 0) THEN
+					CALL CreateDNS(DNS, NULL);
+				END IF;
+				CALL CreateRequest(PacketSize, Direction, Protocol, NULL, (SELECT DNS_ID FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS)), Capture);
+			END IF;
+		ELSE
+			SET @SERVER_ID = (SELECT COUNT(*) FROM Server WHERE LOWER(Server_Address) = LOWER(Server));
+			IF(@SERVER_ID = 0) THEN
+				CALL CreateServer(Server, NULL);
+			END IF;
+			CALL CreateRequest(PacketSize, Direction, Protocol, (SELECT Server_ID FROM Server WHERE LOWER(Server_Address) = LOWER(Server)), NULL, Capture);
+		END IF;
 	END IF;
 END;
 
-CREATE PROCEDURE ReadAllRequests()
+CREATE PROCEDURE ReadAllRequests(IN Details TINYINT(1))
 BEGIN
-	SELECT * FROM Capture_Request ORDER BY CaptureRequest_DateTime DESC;
+	IF(Details = 0)THEN
+		SELECT * FROM Capture_Request ORDER BY CaptureRequest_DateTime DESC;
+	ELSE
+		SELECT * FROM (Capture_Request LEFT JOIN Server ON CaptureRequest_Server = Server_ID) LEFT JOIN DNS ON CaptureRequest_DNS = DNS_ID ORDER BY CaptureRequest_DateTime DESC;
+	END IF;
 END;
 
-CREATE PROCEDURE ReadRequestsByCaptureID(IN Capture INT)
+CREATE PROCEDURE ReadRequestsByCaptureID(IN Capture INT, IN Details TINYINT(1))
 BEGIN
-	SELECT * FROM Capture_Request WHERE CaptureRequest_Capture = Capture;
+	IF(Details = 0)THEN
+		SELECT * FROM Capture_Request WHERE CaptureRequest_Capture = Capture;
+	ELSE
+		SELECT * FROM (Capture_Request LEFT JOIN Server ON CaptureRequest_Server = Server_ID) LEFT JOIN DNS ON CaptureRequest_DNS = DNS_ID WHERE CaptureRequest_Capture = Capture;
+	END IF;
 END;
 
-CREATE PROCEDURE ReadRequestByID(IN ID INT)
+CREATE PROCEDURE ReadRequestByID(IN ID INT, IN Details TINYINT(1))
 BEGIN
-	SELECT * FROM Capture_Request WHERE CaptureRequest_ID = ID;
+	IF(Details = 0)THEN
+		SELECT * FROM Capture_Request WHERE CaptureRequest_ID = ID;
+	ELSE
+		SELECT * FROM (Capture_Request LEFT JOIN Server ON CaptureRequest_Server = Server_ID) LEFT JOIN DNS ON CaptureRequest_DNS = DNS_ID WHERE CaptureRequest_ID = ID;
+	END IF;
+	
 END;
 
 CREATE PROCEDURE UpdateRequest(IN ID INT, IN PacketSize FLOAT, IN Direction TINYINT(1), IN DateTime TIMESTAMP, IN Protocol VARCHAR(255), IN Server INT, IN DNS INT, IN Capture INT)
