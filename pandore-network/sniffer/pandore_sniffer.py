@@ -25,7 +25,8 @@ class PandoreSniffer:
         self.db = pandore_sender.PandoreSender(DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB)
         self.db.create_capture(name, datetime.datetime.now(), None, description, AUDITED_INTERFACE, cnx_type)
         self.capture_id = self.db.get_capture_id(name)
-        self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, use_json=True, bpf_filter=f'dst net {DEVICE_NETWORK} or src net {DEVICE_NETWORK}')
+        self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, use_json=True,
+                                       bpf_filter=f'dst net {DEVICE_NETWORK} or src net {DEVICE_NETWORK}')
         self.cap.sniff(packet_count=5)
 
     def run(self):
@@ -34,8 +35,14 @@ class PandoreSniffer:
     def pkt_to_db(self, pkt):
         try:
             print(pkt_to_json(pkt))
-            self.db.create_request(pkt.length, determine_direction(pkt.ip.src), pkt.highest_layer, 1, 3,
-                                   self.capture_id)
+            try:
+                ptrcl = refactor_protocol_name(pkt.highest_layer, pkt[pkt.transport_layer].srcport,
+                                               pkt[pkt.transport_layer].dstport)
+                print("ok")
+            except:
+                ptrcl = pkt.highest_layer
+
+            self.db.create_request(pkt.length, determine_direction(pkt.ip.src), ptrcl, 1, 3, self.capture_id)
         except Exception as e:
             print("A error occurred : \n" + e)
 
@@ -44,13 +51,17 @@ class PandoreSniffer:
 
 def pkt_to_json(pkt):
     try:
+        try:
+            ptrcl = refactor_protocol_name(pkt.highest_layer, pkt[pkt.transport_layer].srcport, pkt[pkt.transport_layer].dstport)
+        except:
+            ptrcl = pkt.highest_layer
         pck_to_json = {
             "timestamp": datetime.datetime.now().timestamp(),
             "IP_SRC": pkt.ip.src,
             "IP_DST": pkt.ip.dst,
             "DIRECTION": determine_direction(pkt.ip.src),
             "L4_PROT": pkt.transport_layer,
-            "HIGHEST_LAYER": pkt.highest_layer,
+            "HIGHEST_LAYER": ptrcl,
             "PACKET_SIZE": pkt.length
         }
         json_dump = json.dumps(pck_to_json)
@@ -60,8 +71,8 @@ def pkt_to_json(pkt):
         # print(e)
 
 
-def refactor_protocol_name(original_name, srcport, dstport):
-    if (original_name is "TLS") and ((srcport is 443) or (dstport is 443)):
+def refactor_protocol_name(original_name, src_port, dst_port):
+    if (original_name == 'TLS') and ((str(src_port) == "443") or (str(dst_port) == "443")):
         return "HTTPS"
     else:
         return original_name
