@@ -25,24 +25,37 @@ class PandoreSniffer:
         self.db = pandore_sender.PandoreSender(DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB)
         self.db.create_capture(name, datetime.datetime.now(), None, description, AUDITED_INTERFACE, cnx_type)
         self.capture_id = self.db.get_capture_id(name)
-        self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, use_json=True,
-                                       bpf_filter=f'dst net {DEVICE_NETWORK} or src net {DEVICE_NETWORK}')
-        self.cap.sniff(packet_count=5)
+        # self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, use_json=True, bpf_filter=f'dst net {
+        # DEVICE_NETWORK} or src net {DEVICE_NETWORK}')
+        self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, bpf_filter=f'udp port 53') # debug dns sniff
+        self.cap.sniff(packet_count=1)
 
     def run(self):
         self.cap.apply_on_packets(self.pkt_to_db, timeout=self.duration)
 
     def pkt_to_db(self, pkt):
         try:
+            # console output
             print(pkt_to_json(pkt))
+            # print(pkt.dns)
+            # refactor protocol name
             try:
-                ptrcl = refactor_protocol_name(pkt.highest_layer, pkt[pkt.transport_layer].srcport,
-                                               pkt[pkt.transport_layer].dstport)
-                print("ok")
+                highest_layer_protocol = refactor_protocol_name(pkt.highest_layer, pkt[pkt.transport_layer].srcport,
+                                                                pkt[pkt.transport_layer].dstport)
             except:
-                ptrcl = pkt.highest_layer
+                highest_layer_protocol = pkt.highest_layer
+            # snif dns rq and asw
+            try:
+                if pkt.dns:
+                    sniff_dns_info(pkt)
+            except:
+                pass
 
-            self.db.create_request(pkt.length, determine_direction(pkt.ip.src), ptrcl, 1, 3, self.capture_id)
+            # ADD packet in the DB
+            self.db.create_request(pkt.length, determine_direction(pkt.ip.src), highest_layer_protocol, 1, 3,
+                                   self.capture_id)
+            print(DNS)
+
         except Exception as e:
             print("A error occurred : \n" + e)
 
@@ -51,21 +64,27 @@ class PandoreSniffer:
 
 def pkt_to_json(pkt):
     try:
+        # refactor protocol name
         try:
-            ptrcl = refactor_protocol_name(pkt.highest_layer, pkt[pkt.transport_layer].srcport, pkt[pkt.transport_layer].dstport)
+            highest_layer_protocol = refactor_protocol_name(pkt.highest_layer, pkt[pkt.transport_layer].srcport,
+                                                            pkt[pkt.transport_layer].dstport)
         except:
-            ptrcl = pkt.highest_layer
+            highest_layer_protocol = pkt.highest_layer
+
+        # convert in JSON
         pck_to_json = {
             "timestamp": datetime.datetime.now().timestamp(),
             "IP_SRC": pkt.ip.src,
             "IP_DST": pkt.ip.dst,
             "DIRECTION": determine_direction(pkt.ip.src),
             "L4_PROT": pkt.transport_layer,
-            "HIGHEST_LAYER": ptrcl,
+            "HIGHEST_LAYER": highest_layer_protocol,
             "PACKET_SIZE": pkt.length
         }
+
         json_dump = json.dumps(pck_to_json)
         return json_dump
+
     except Exception as e:
         print(f"Packet below L3 detected. Excluded from the output.({pkt.highest_layer})")
         # print(e)
@@ -89,10 +108,35 @@ def convert_size(size_bytes):
 
 
 def sniff_dns_info(pkt):
-    if pkt.dns.qry_name:
-        print('DNS Request from %s: %s' % (pkt.ip.src, pkt.dns.qry_name))
-    elif pkt.dns.resp_name:
-        print('DNS Response from %s: %s' % (pkt.ip.src, pkt.dns.resp_name))
+    try:
+        resp_name = None
+        ip_list = None
+        if pkt.dns.resp_name:
+            # print(pkt.dns)
+            resp_name = pkt.dns.resp_name
+            ip_list = pkt.dns.a.all_fields
+            ip_list_out = out_dns_layer_field(ip_list, "line")
+        print(f"DNS - name : {resp_name}, IP list : {ip_list_out}")
+        populate_dns_dictionary(resp_name, ip_list)
+
+    except:
+        pass
+
+
+def populate_dns_dictionary(name, ip_layer_field):
+    for ip in ip_layer_field:
+        DNS[ip.show] = name
+
+
+def out_dns_layer_field(ip_layer_field, output_type):
+    out = ""
+    if output_type == "line":
+        for ip in ip_layer_field:
+            out += ip.show + ", "
+    if output_type == "column":
+        for ip in ip_layer_field:
+            out += ip.show + "\n"
+    return out
 
 
 def determine_direction(src_ip):
