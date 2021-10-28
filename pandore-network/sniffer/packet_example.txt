@@ -1,0 +1,83 @@
+Audited interface: Ethernet
+truc interessant : pkt[pkt.transport_layer].dstport
+
+Packet (Length: 75)
+Layer ETH:
+	src: 2c:f0:5d:e8:39:49
+	type: 0x00000800
+	dst: 74:4d:28:c3:1b:7d
+	dst:
+		eth.dst_resolved: 74:4d:28:c3:1b:7d
+		oui: 7621928
+		ig: 0
+		oui_resolved: Routerboard.com
+		dst_resolved: 74:4d:28:c3:1b:7d
+		lg: 0
+		addr: 74:4d:28:c3:1b:7d
+		addr_resolved: 74:4d:28:c3:1b:7d
+	src:
+		oui: 2945117
+		ig: 0
+		eth.src_resolved: 2c:f0:5d:e8:39:49
+		oui_resolved: Micro-Star INTL CO., LTD.
+		src_resolved: 2c:f0:5d:e8:39:49
+		lg: 0
+		addr: 2c:f0:5d:e8:39:49
+		addr_resolved: 2c:f0:5d:e8:39:49
+Layer IP:
+	src_host: 192.168.10.196
+	frag_offset: 0
+	status: 2
+	dsfield:
+		dscp: 0
+		ecn: 0
+	src: 192.168.10.196
+	len: 61
+	host: 192.168.10.196
+	host: 62.210.11.55
+	dsfield: 0x00000000
+	ttl: 128
+	proto: 17
+	flags:
+		df: 0
+		rb: 0
+		mf: 0
+	dst: 62.210.11.55
+	dst_host: 62.210.11.55
+	version: 4
+	id: 0x00008db6
+	hdr_len: 20
+	checksum: 0x00000000
+	flags: 0x00000000
+	addr: 192.168.10.196
+	addr: 62.210.11.55
+	checksum.status: 2
+Layer UDP:
+	length: 41
+	port: 50728
+	port: 53
+	srcport: 50728
+	payload: b2:2b:01:00:00:01:00:00:00:00:00:00:04:61:70:69:31:06:6f:72:69:67:69:6e:03:63:6f:6d:00:00:01:00:01
+	stream: 0
+	status: 2
+	checksum: 0x000015b0
+	dstport: 53
+	checksum.status: 2
+Layer DNS:
+	flags:
+		response: 0
+		recdesired: 1
+		opcode: 0
+		checkdisable: 0
+		truncated: 0
+		z: 0
+	queries: 1
+	count.add_rr: 0
+	id: 0x0000b22b
+	auth_rr: 0
+	answers: 0
+	flags: 0x00000100
+	count.answers: 0
+	count.auth_rr: 0
+	count.queries: 1
+	add_rr: 0
