@@ -1,6 +1,8 @@
 from flask import Flask
 from flask import render_template
 from database.database import db, init_database
+from pprint import pprint
+from ipwhois import IPWhois
 import json
 
 app = Flask(__name__)
@@ -15,7 +17,10 @@ with app.test_request_context():  # (2) bloc execute a l'initialisation de Flask
 @app.route('/', methods = ['POST', 'GET'])
 def index():
     jsonfile = "{rice: 5, yam: 6, tomato: 0, potato: 0,beans: 0, maize: 0, oil: 3}"
-    return render_template("index.html",jsonfile=jsonfile, test='jpp')
+    obj = IPWhois('74.125.225.229')
+    res = obj.lookup_rdap(root_ent_check=False)['network']['name']
+    pprint(res)
+    return render_template("index.html",jsonfile=jsonfile, test=res)
 
 
 if __name__ == '__main__':
