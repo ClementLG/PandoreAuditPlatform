@@ -34,7 +34,7 @@ class PandoreSender:
         self.conn.commit()
 
     def create_capture(self, name, start_time, end_time, description, interface, connection_type):
-        self.cursor.callproc('CreateCapture', [name, start_time, end_time, description, interface, connection_type ])
+        self.cursor.callproc('CreateCapture', [name, start_time, end_time, description, interface, connection_type])
         self.conn.commit()
 
     def get_capture_id(self, name):
@@ -42,8 +42,12 @@ class PandoreSender:
         result = self.cursor.fetchall()
         return result[0][0]
 
-    def create_request(self, packet_size, direction, protocol, server_ip, dns_name, capture):
-        self.conn.cursor().callproc('CreateRequest', [packet_size,direction, protocol, server_ip, dns_name, capture])
+    def create_request(self, packet_size, direction, protocol, server_id, dns_id, capture):
+        self.conn.cursor().callproc('CreateRequest', [packet_size,direction, protocol, server_id, dns_id, capture])
+        self.conn.commit()
+
+    def create_request_string(self, packet_size, direction, protocol, server_ip, dns_name, capture):
+        self.conn.cursor().callproc('CreateRequestString', [packet_size,direction, protocol, server_ip, dns_name, capture])
         self.conn.commit()
 
 

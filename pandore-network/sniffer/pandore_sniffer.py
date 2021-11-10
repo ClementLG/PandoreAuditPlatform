@@ -25,10 +25,9 @@ class PandoreSniffer:
         self.db = pandore_sender.PandoreSender(DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB)
         self.db.create_capture(name, datetime.datetime.now(), None, description, AUDITED_INTERFACE, cnx_type)
         self.capture_id = self.db.get_capture_id(name)
-        # self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, use_json=True, bpf_filter=f'dst net {
-        # DEVICE_NETWORK} or src net {DEVICE_NETWORK}')
-        self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, bpf_filter=f'udp port 53') # debug dns sniff
-        self.cap.sniff(packet_count=1)
+        self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, bpf_filter=f'( dst net {DEVICE_NETWORK} or src net {DEVICE_NETWORK} ) and not port 1194')
+
+        self.cap.sniff(packet_count=10)
 
     def run(self):
         self.cap.apply_on_packets(self.pkt_to_db, timeout=self.duration)
@@ -37,14 +36,15 @@ class PandoreSniffer:
         try:
             # console output
             print(pkt_to_json(pkt))
-            # print(pkt.dns)
+
             # refactor protocol name
             try:
-                highest_layer_protocol = refactor_protocol_name(pkt.highest_layer, pkt[pkt.transport_layer].srcport,
-                                                                pkt[pkt.transport_layer].dstport)
+                # Change protocol name. Ex : TLS:443 --> HTTPS
+                highest_layer_protocol = refactor_protocol_name(pkt.highest_layer, pkt[pkt.transport_layer].srcport, pkt[pkt.transport_layer].dstport)
             except:
                 highest_layer_protocol = pkt.highest_layer
-            # snif dns rq and asw
+
+            # Sniff dns asw to get ip:domain_name assoc
             try:
                 if pkt.dns:
                     sniff_dns_info(pkt)
@@ -52,9 +52,11 @@ class PandoreSniffer:
                 pass
 
             # ADD packet in the DB
-            self.db.create_request(pkt.length, determine_direction(pkt.ip.src), highest_layer_protocol, 1, 3,
-                                   self.capture_id)
-            print(DNS)
+            try:
+                #self.db.create_request_string(pkt.length, determine_direction(pkt.ip.src), highest_layer_protocol, str(pkt.ip.dst), check_dns_dictionary(pkt.ip.dst), self.capture_id)
+                print(DNS)
+            except Exception as exc:
+                print(exc)
 
         except Exception as e:
             print("A error occurred : \n" + e)
@@ -126,6 +128,13 @@ def sniff_dns_info(pkt):
 def populate_dns_dictionary(name, ip_layer_field):
     for ip in ip_layer_field:
         DNS[ip.show] = name
+
+
+def check_dns_dictionary(ip):
+    try:
+        return DNS[ip]
+    except:
+        return None
 
 
 def out_dns_layer_field(ip_layer_field, output_type):
