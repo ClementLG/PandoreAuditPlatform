@@ -3,7 +3,7 @@
 # IMPORTS======================================================================
 
 from pandore_config import *
-import pandore_sender
+import pandore_senderV2
 import pyshark
 import json
 import datetime
@@ -22,10 +22,11 @@ class PandoreSniffer:
     def __init__(self, name, duration, description, cnx_type):
         self.name = name
         self.duration = duration
-        self.db = pandore_sender.PandoreSender(DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB)
+        self.db = pandore_senderV2.PandoreSenderV2(DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB)
         self.db.create_capture(name, datetime.datetime.now(), None, description, AUDITED_INTERFACE, cnx_type)
         self.capture_id = self.db.get_capture_id(name)
-        self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, bpf_filter=f'( dst net {DEVICE_NETWORK} or src net {DEVICE_NETWORK} ) and not port 1194')
+        self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE,
+                                       bpf_filter=f'( dst net {DEVICE_NETWORK} or src net {DEVICE_NETWORK} ) and not port 1194')
 
         self.cap.sniff(packet_count=10)
 
@@ -40,7 +41,8 @@ class PandoreSniffer:
             # refactor protocol name
             try:
                 # Change protocol name. Ex : TLS:443 --> HTTPS
-                highest_layer_protocol = refactor_protocol_name(pkt.highest_layer, pkt[pkt.transport_layer].srcport, pkt[pkt.transport_layer].dstport)
+                highest_layer_protocol = refactor_protocol_name(pkt.highest_layer, pkt[pkt.transport_layer].srcport,
+                                                                pkt[pkt.transport_layer].dstport)
             except:
                 highest_layer_protocol = pkt.highest_layer
 
@@ -53,13 +55,15 @@ class PandoreSniffer:
 
             # ADD packet in the DB
             try:
-                self.db.create_request_string(pkt.length, determine_direction(pkt.ip.src), highest_layer_protocol, str(pkt.ip.dst), check_dns_dictionary(pkt.ip.dst), self.capture_id)
+                self.db.create_request_string(pkt.length, determine_direction(pkt.ip.src), highest_layer_protocol,
+                                              str(pkt.ip.dst), check_dns_dictionary(pkt.ip.dst), self.capture_id)
                 print(DNS)
-            except Exception as exc:
-                print(exc)
+            except Exception as e:
+                print(e)
 
         except Exception as e:
             print("A error occurred : \n" + e)
+            self.db.close_db()
 
 
 # FUNCTIONS=====================================================================

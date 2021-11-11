@@ -21,8 +21,9 @@ class PandoreSender:
                 host=db_host,
                 port=db_port,
                 database=database
-
             )
+            self.conn.autocommit = False
+            self.conn.auto_reconnect = True
             self.cursor = self.conn.cursor()
         except mariadb.Error as e:
             print(f"Error connecting to MariaDB Platform: {e}")
@@ -43,12 +44,15 @@ class PandoreSender:
         return result[0][0]
 
     def create_request(self, packet_size, direction, protocol, server_id, dns_id, capture):
-        self.conn.cursor().callproc('CreateRequest', [packet_size,direction, protocol, server_id, dns_id, capture])
+        self.cursor().callproc('CreateRequest', [packet_size,direction, protocol, server_id, dns_id, capture])
         self.conn.commit()
 
     def create_request_string(self, packet_size, direction, protocol, server_ip, dns_name, capture):
         self.conn.cursor().callproc('CreateRequestString', [packet_size,direction, protocol, server_ip, dns_name, capture])
         self.conn.commit()
+
+    def close_db(self):
+        self.conn.close()
 
 
 
