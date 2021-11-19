@@ -3,7 +3,7 @@
 
 # IMPORTS======================================================================
 
-import mariadb
+import mysql.connector
 import sys
 
 
@@ -11,21 +11,19 @@ import sys
 
 # CLASS=========================================================================
 
-class PandoreSender:
+class PandoreSenderV2:
 
     def __init__(self, db_host, db_port, user, password, database):
         try:
-            self.conn = mariadb.connect(
+            self.conn = mysql.connector.connect(
                 user=user,
                 password=password,
                 host=db_host,
                 port=db_port,
                 database=database
             )
-            self.conn.autocommit = False
-            self.conn.auto_reconnect = True
             self.cursor = self.conn.cursor()
-        except mariadb.Error as e:
+        except mysql.connector.Error as e:
             print(f"Error connecting to MariaDB Platform: {e}")
             sys.exit(1)
         print(f"Pandore agent connected to {db_host} on db {database}")
