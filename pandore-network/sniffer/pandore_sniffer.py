@@ -25,9 +25,8 @@ class PandoreSniffer:
         self.db = pandore_senderV2.PandoreSenderV2(DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB)
         self.db.create_capture(name, datetime.datetime.now(), None, description, AUDITED_INTERFACE, cnx_type)
         self.capture_id = self.db.get_capture_id(name)
-        self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE,
-                                       bpf_filter=f'( dst net {DEVICE_NETWORK} or src net {DEVICE_NETWORK} ) and not port 1194')
-
+        self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, bpf_filter="( dst net "+str(DEVICE_NETWORK)+" or src net "+str(DEVICE_NETWORK)+" ) and not port 1194")
+        #self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, bpf_filter='port 53')
         self.cap.sniff(packet_count=10)
 
     def run(self):
@@ -92,7 +91,7 @@ def pkt_to_json(pkt):
         return json_dump
 
     except Exception as e:
-        print(f"Packet below L3 detected. Excluded from the output.({pkt.highest_layer})")
+        print("Packet below L3 detected. Excluded from the output.("+str(pkt.highest_layer)+")")
         # print(e)
 
 
@@ -122,7 +121,7 @@ def sniff_dns_info(pkt):
             resp_name = pkt.dns.resp_name
             ip_list = pkt.dns.a.all_fields
             ip_list_out = out_dns_layer_field(ip_list, "line")
-        print(f"DNS - name : {resp_name}, IP list : {ip_list_out}")
+        print("DNS - name : "+str(resp_name)+", IP list : "+str(ip_list_out)+")")
         populate_dns_dictionary(resp_name, ip_list)
 
     except:
