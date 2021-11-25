@@ -101,7 +101,7 @@ var chart = am4core.createFromConfig({
     "animationDuration": 0
   },
 
-  // Set up series source by level
+  // Set up series static by level
   "seriesTemplates": {
     "0": {
       "columns": {

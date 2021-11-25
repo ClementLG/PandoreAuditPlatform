@@ -4,13 +4,13 @@
     <head>
         <meta charset="utf-8">
         <title>Capture in progress - Pandore</title>
-        <link rel="stylesheet" href="../../FrontEnd/source/bootstrap/css/bootstrap.css">
-        <link rel="stylesheet" href="../../FrontEnd/source/bootstrap/icon/bootstrap-icons.css">
-		    <script src="../../FrontEnd/source/jquery/jquery-3.6.0.min.js"></script>
-        <script src="../../FrontEnd/source/bootstrap/js/bootstrap.bundle.min.js"></script>
-        <script src="../../FrontEnd/source/chart/amcharts4/core.js"></script>
-        <script src="../../FrontEnd/source/chart/amcharts4/charts.js"></script>
-        <script src="../../FrontEnd/source/chart/amcharts4/themes/animated.js"></script>
+        <link rel="stylesheet" href="../static/bootstrap/css/bootstrap.css">
+        <link rel="stylesheet" href="../static/bootstrap/icon/bootstrap-icons.css">
+		    <script src="../static/jquery/jquery-3.6.0.min.js"></script>
+        <script src="../static/bootstrap/js/bootstrap.bundle.min.js"></script>
+        <script src="../static/chart/amcharts4/core.js"></script>
+        <script src="../static/chart/amcharts4/charts.js"></script>
+        <script src="../static/chart/amcharts4/themes/animated.js"></script>
     </head>
     <body class="d-flex flex-column min-vh-100">
         <header>
@@ -23,13 +23,13 @@
                     <div class="collapse navbar-collapse" id="navbarText">
                       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                       <li class="nav-item">
-                          <a class="nav-link active" aria-current="page" href="index.html">Home</a>
+                          <a class="nav-link active" aria-current="page" href="{{ url_for('index') }}">Home</a>
                       </li>
                       <li class="nav-item">
-                          <a class="nav-link" href="saved_captures.html">Saved captures</a>
+                          <a class="nav-link" href="{{ url_for('saved_captures') }}">Saved captures</a>
                       </li>
                       <li class="nav-item">
-                          <a class="nav-link" href="services.html">Services</a>
+                          <a class="nav-link" href="{{ url_for('services') }}">Services</a>
                       </li>
                       </ul>
                       <span class="navbar-text">
@@ -140,7 +140,7 @@
         <footer class="mt-auto bg-imt-green py-3 px-3">
             <div class="row">
                 <div class="col-sm">
-                    <img src="../../FrontEnd/image/logo_imt.png" style="max-height: 60px;">
+                    <img src="../image/logo_imt.png" style="max-height: 60px;">
                 </div>
                 <div class="col-sm text-white">
                     <div class="row d-flex justify-content-center">

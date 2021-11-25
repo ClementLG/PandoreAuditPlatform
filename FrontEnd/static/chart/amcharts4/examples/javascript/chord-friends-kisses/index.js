@@ -267,7 +267,7 @@ hoverState.properties.strokeOpacity = 0.7;
 
 // data credit label
 var creditLabel = chart.chartContainer.createChild(am4core.TextLink);
-creditLabel.text = "Data source: notrudedude";
+creditLabel.text = "Data static: notrudedude";
 creditLabel.url = "https://www.reddit.com/user/notrudedude";
 creditLabel.y = am4core.percent(99);
 creditLabel.x = am4core.percent(99);
