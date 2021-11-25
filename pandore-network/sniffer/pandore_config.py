@@ -1,8 +1,8 @@
 # PANDORE AGENT CONFIG
 
 ## NETWORK
-AUDITED_INTERFACE = "Ethernet"  # Interface to sniff
-DEVICE_NETWORK = "192.168.10.0/24"  # Audited device network (use in filter)
+AUDITED_INTERFACE = "Ethernet 2"  # Interface to sniff
+DEVICE_NETWORK = "192.168.1.0/24"  # Audited device network (use in filter)
 
 ## DATABASE
 DB_HOST = '192.168.100.10'  # DB server address
