@@ -1,9 +1,9 @@
 import datetime
 
-import pandore_sender
+import pandore_senderV2
 from pandore_config import *
 
-db = pandore_sender.PandoreSender(DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB)
+db = pandore_senderV2.PandoreSenderV2(DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB)
 # db.create_service("Michel5")
 # db.create_service("Michel6")
 # db.create_capture("test2", datetime.datetime.now(), None, "descrip", AUDITED_INTERFACE, None)
@@ -18,3 +18,4 @@ db = pandore_sender.PandoreSender(DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB)
 # self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, use_json=True, bpf_filter=f'udp port 53')
 # self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, bpf_filter=f'udp port 53') # debug dns sniff
 # self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, use_json=True, bpf_filter=f'dst net {DEVICE_NETWORK} or src net {DEVICE_NETWORK}')
+db.create_dns("wesh.fr")

@@ -25,8 +25,10 @@ class PandoreSniffer:
         self.db = pandore_senderV2.PandoreSenderV2(DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB)
         self.db.create_capture(name, datetime.datetime.now(), None, description, AUDITED_INTERFACE, cnx_type)
         self.capture_id = self.db.get_capture_id(name)
-        self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, bpf_filter="( dst net "+str(DEVICE_NETWORK)+" or src net "+str(DEVICE_NETWORK)+" ) and not port 1194")
-        #self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, bpf_filter='port 53')
+        self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE,
+                                       bpf_filter="( dst net " + str(DEVICE_NETWORK) + " or src net " + str(
+                                           DEVICE_NETWORK) + " ) and not port 1194")
+        # self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, bpf_filter='port 53')
         self.cap.sniff(packet_count=10)
 
     def run(self):
@@ -48,13 +50,15 @@ class PandoreSniffer:
             # Sniff dns asw to get ip:domain_name assoc
             try:
                 if pkt.dns:
-                    sniff_dns_info(pkt)
+                    self.dns_to_db(sniff_dns_info(pkt))
             except:
                 pass
 
             # ADD packet in the DB
             try:
-                self.db.create_request_string(int(pkt.length), determine_direction(pkt.ip.src), highest_layer_protocol, determine_ip_saved(pkt.ip.src,pkt.ip.dst), check_dns_dictionary(pkt.ip.dst), self.capture_id)
+                self.db.create_request_string(int(pkt.length), determine_direction(pkt.ip.src), highest_layer_protocol,
+                                              determine_ip_saved(pkt.ip.src, pkt.ip.dst),
+                                              check_dns_dictionary(pkt.ip.dst), self.capture_id)
                 print(DNS)
             except Exception as e:
                 print(e)
@@ -62,6 +66,14 @@ class PandoreSniffer:
         except Exception as e:
             print("A error occurred : \n" + e)
             self.db.close_db()
+
+    def dns_to_db(self, domain_name):
+        try:
+            if domain_name is not None:
+                self.db.create_dns(domain_name)
+        except Exception as e:
+            print(e)
+            pass
 
 
 # FUNCTIONS=====================================================================
@@ -90,7 +102,7 @@ def pkt_to_json(pkt):
         return json_dump
 
     except Exception as e:
-        print("Packet below L3 detected. Excluded from the output.("+str(pkt.highest_layer)+")")
+        print("Packet below L3 detected. Excluded from the output.(" + str(pkt.highest_layer) + ")")
         # print(e)
 
 
@@ -113,15 +125,14 @@ def convert_size(size_bytes):
 
 def sniff_dns_info(pkt):
     try:
-        resp_name = None
-        ip_list = None
         if pkt.dns.resp_name:
             # print(pkt.dns)
             resp_name = pkt.dns.resp_name
             ip_list = pkt.dns.a.all_fields
             ip_list_out = out_dns_layer_field(ip_list, "line")
-        print("DNS - name : "+str(resp_name)+", IP list : "+str(ip_list_out)+")")
-        populate_dns_dictionary(resp_name, ip_list)
+            print("DNS - name : " + str(resp_name) + ", IP list : " + str(ip_list_out) + ")")
+            populate_dns_dictionary(resp_name, ip_list)
+            return resp_name
 
     except:
         pass
@@ -156,8 +167,9 @@ def determine_direction(src_ip):
     else:
         return "0"
 
+
 def determine_ip_saved(src_ip, dst_ip):
     if ipaddress.ip_address(src_ip) in ipaddress.ip_network(DEVICE_NETWORK):
         return str(dst_ip)
     else:
-        return  str(src_ip)
+        return str(src_ip)
