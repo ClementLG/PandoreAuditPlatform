@@ -8,20 +8,20 @@ CREATE TABLE Service(
 	CONSTRAINT Unique_Service_Name UNIQUE (Service_Name)
 )ENGINE=InnoDB;
 
-CREATE TABLE Server(
-	Server_ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
-	Server_Address VARCHAR(1000) NOT NULL,
-	Server_Service INT NULL,
-	CONSTRAINT Unique_Server_Address UNIQUE (Server_Address),
-	CONSTRAINT Server_Service FOREIGN KEY (Server_Service) REFERENCES Service(Service_ID)
-)ENGINE=INNODB;
-
 CREATE TABLE DNS(
 	DNS_ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
 	DNS_Value VARCHAR(1000) NOT NULL,
-	DNS_Service INT NULL,
-	CONSTRAINT Unique_DNS_Value UNIQUE (DNS_Value),
-	CONSTRAINT DNS_Service FOREIGN KEY (DNS_Service) REFERENCES Service(Service_ID)
+	CONSTRAINT Unique_DNS_Value UNIQUE (DNS_Value)
+)ENGINE=INNODB;
+
+CREATE TABLE Server(
+	Server_ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+	Server_Address VARCHAR(1000) NOT NULL,
+	Server_DNS INT NULL,
+	Server_Service INT NULL,
+	CONSTRAINT Unique_Server_Address_DNS UNIQUE (Server_Address),
+	CONSTRAINT Server_DNS FOREIGN KEY (Server_DNS) REFERENCES DNS(DNS_ID),
+	CONSTRAINT Server_Service FOREIGN KEY (Server_Service) REFERENCES Service(Service_ID)
 )ENGINE=INNODB;
 
 CREATE TABLE Capture(
@@ -40,11 +40,9 @@ CREATE TABLE Capture_Request(
 	CaptureRequest_Direction TINYINT NOT NULL, /* 0 = DOWN, 1 = UP */ 
 	CaptureRequest_DateTime TIMESTAMP NOT NULL,
 	CaptureRequest_Protocol VARCHAR(255) NOT NULL,
-	CaptureRequest_Server INT NULL,
-	CaptureRequest_DNS INT NULL,
+	CaptureRequest_Server INT NOT NULL,
 	CaptureRequest_Capture INT NOT NULL,
 	CONSTRAINT Request_Server FOREIGN KEY (CaptureRequest_Server) REFERENCES Server(Server_ID),
-	CONSTRAINT Request_DNS FOREIGN KEY (CaptureRequest_DNS) REFERENCES DNS(DNS_ID),
 	CONSTRAINT Request_Capture FOREIGN KEY (CaptureRequest_Capture) REFERENCES Capture(Capture_ID)
 )ENGINE=INNODB;
 
@@ -85,9 +83,22 @@ BEGIN
 END;
 
 /*Stored procedures for table Server*/
-CREATE PROCEDURE CreateServer(IN Address VARCHAR(1000), IN Service INT)
+CREATE PROCEDURE CreateServer(IN Address VARCHAR(1000), IN Service INT, IN DNS INT)
 BEGIN
-	INSERT INTO Server (Server_Address, Server_Service) VALUES (Address, Service);
+	INSERT INTO Server (Server_Address, Server_Service, Server_DNS) VALUES (Address, Service, DNS);
+END;
+
+CREATE PROCEDURE CreateServerString(IN Address VARCHAR(1000), IN Service INT, IN DNS VARCHAR(1000))
+BEGIN
+	IF (DNS IS NOT NULL AND DNS <> '') THEN
+		SET @DNS = (SELECT COUNT(*) FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS));
+		IF(@DNS = 0)THEN
+			CALL CreateDNS(DNS);
+		END IF;
+		INSERT INTO Server (Server_Address, Server_Service, Server_DNS) VALUES (Address, Service, (SELECT DNS_ID FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS)));
+	ELSE
+		INSERT INTO Server (Server_Address, Server_Service, Server_DNS) VALUES (Address, Service, NULL);
+	END IF;
 END;
 
 CREATE PROCEDURE ReadAllServers()
@@ -100,6 +111,11 @@ BEGIN
 	SELECT * FROM Server WHERE Server_Service = Service ORDER BY Server_Address ASC;
 END;
 
+CREATE PROCEDURE ReadServerByDNSID(IN DNS INT)
+BEGIN
+	SELECT * FROM Server WHERE Server_DNS = DNS;
+END;
+
 CREATE PROCEDURE ReadServerByID(IN ID INT)
 BEGIN
 	SELECT * FROM Server WHERE Server_ID = ID;
@@ -110,9 +126,9 @@ BEGIN
 	SELECT * FROM Server WHERE LOWER(Server_Address) = LOWER(Address);
 END;
 
-CREATE PROCEDURE UpdateServer(IN ID INT, IN Address VARCHAR(1000), IN Service INT)
+CREATE PROCEDURE UpdateServer(IN ID INT, IN Address VARCHAR(1000), IN Service INT, IN DNS INT)
 BEGIN
-	UPDATE Server SET Server_Address = Address, Server_Service = Service WHERE Server_ID = ID;
+	UPDATE Server SET Server_Address = Address, Server_Service = Service, Server_DNS = DNS WHERE Server_ID = ID;
 END;
 
 CREATE PROCEDURE DeleteServerByID(IN ID INT)
@@ -131,19 +147,14 @@ BEGIN
 END;
 
 /*Stored procedures for table DNS*/
-CREATE PROCEDURE CreateDNS(IN Value VARCHAR(1000), IN Service INT)
+CREATE PROCEDURE CreateDNS(IN Value VARCHAR(1000))
 BEGIN
-	INSERT INTO DNS (DNS_Value, DNS_Service) VALUES (Value, Service);
+	INSERT INTO DNS (DNS_Value) VALUES (Value);
 END;
 
 CREATE PROCEDURE ReadAllDNS()
 BEGIN
 	SELECT * FROM DNS ORDER BY DNS_Value ASC;
-END;
-
-CREATE PROCEDURE ReadDNSByServiceID(IN Service INT)
-BEGIN
-	SELECT * FROM DNS WHERE DNS_Service = Service ORDER BY DNS_Value ASC;
 END;
 
 CREATE PROCEDURE ReadDNSByID(IN ID INT)
@@ -156,9 +167,9 @@ BEGIN
 	SELECT * FROM DNS WHERE LOWER(DNS_Value) = LOWER(Value);
 END;
 
-CREATE PROCEDURE UpdateDNS(IN ID INT, IN Value VARCHAR(1000), IN Service INT)
+CREATE PROCEDURE UpdateDNS(IN ID INT, IN Value VARCHAR(1000))
 BEGIN
-	UPDATE DNS SET DNS_Value = Address, DNS_Service = Service WHERE DNS_ID = ID;
+	UPDATE DNS SET DNS_Value = Address WHERE DNS_ID = ID;
 END;
 
 CREATE PROCEDURE DeleteDNSByID(IN ID INT)
@@ -169,11 +180,6 @@ END;
 CREATE PROCEDURE DeleteDNSByValue(IN Value VARCHAR(1000))
 BEGIN
 	DELETE FROM DNS WHERE LOWER(DNS_Value) = LOWER(Value);
-END;
-
-CREATE PROCEDURE DeleteDNSByServiceID(IN Service INT)
-BEGIN
-	DELETE FROM DNS WHERE DNS_Service = Service;
 END;
 
 /*Stored procedures for table Capture*/
@@ -204,40 +210,32 @@ BEGIN
 END; 
 
 /*Stored procedures for table Capture_Request*/
-CREATE PROCEDURE CreateRequest(IN PacketSize FLOAT, IN Direction TINYINT(1), IN Protocol VARCHAR(255), IN Server INT, IN DNS INT, IN Capture INT)
+CREATE PROCEDURE CreateRequest(IN PacketSize FLOAT, IN Direction TINYINT(1), IN Protocol VARCHAR(255), IN Server INT, IN Capture INT)
 BEGIN
-	INSERT INTO Capture_Request (CaptureRequest_PacketSize, CaptureRequest_Direction, CaptureRequest_DateTime, CaptureRequest_Protocol, CaptureRequest_Server, CaptureRequest_DNS, CaptureRequest_Capture) VALUES (PacketSize, Direction, CURRENT_TIMESTAMP, Protocol, Server, DNS, Capture);
+	INSERT INTO Capture_Request (CaptureRequest_PacketSize, CaptureRequest_Direction, CaptureRequest_DateTime, CaptureRequest_Protocol, CaptureRequest_Server, CaptureRequest_Capture) VALUES (PacketSize, Direction, CURRENT_TIMESTAMP, Protocol, Server, Capture);
 END;
 
 CREATE PROCEDURE CreateRequestString(IN PacketSize FLOAT, IN Direction TINYINT(1), IN Protocol VARCHAR(255), IN Server VARCHAR(1000), IN DNS VARCHAR(1000), IN Capture INT)
 BEGIN
 	IF (Server IS NOT NULL AND Server <> '' AND DNS IS NOT NULL AND DNS <> '') THEN
-		SET @SERVER_ID = (SELECT COUNT(*) FROM Server WHERE LOWER(Server_Address) = LOWER(Server));
+		SET @SERVER_ID = (SELECT COUNT(*) FROM Server WHERE LOWER(Server_Address) = LOWER(Server) AND Server_DNS = (SELECT DNS_ID FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS)));
 		SET @DNS_ID = (SELECT COUNT(*) FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS));
-		IF(@SERVER_ID = 0) THEN
-			CALL CreateServer(Server, NULL);
-		END IF;
 		IF(@DNS_ID = 0) THEN
-			CALL CreateDNS(DNS, NULL);
+			CALL CreateDNS(DNS);
 		END IF;
-		CALL CreateRequest(PacketSize, Direction, Protocol, (SELECT Server_ID FROM Server WHERE LOWER(Server_Address) = LOWER(Server)), (SELECT DNS_ID FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS)), Capture);
+		IF(@SERVER_ID = 0) THEN
+			CALL CreateServer(Server, NULL, (SELECT DNS_ID FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS)));
+		END IF;
+		CALL CreateRequest(PacketSize, Direction, Protocol, (SELECT Server_ID FROM Server WHERE LOWER(Server_Address) = LOWER(Server)), Capture);
 	ELSE
 		IF (Server IS NULL OR Server = '') THEN
-			IF (DNS IS NULL OR DNS = '') THEN
-				CALL CreateRequest(PacketSize, Direction, Protocol, NULL, NULL, Capture);
-			ELSE
-				SET @DNS_ID = (SELECT COUNT(*) FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS));
-				IF(@DNS_ID = 0) THEN
-					CALL CreateDNS(DNS, NULL);
-				END IF;
-				CALL CreateRequest(PacketSize, Direction, Protocol, NULL, (SELECT DNS_ID FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS)), Capture);
-			END IF;
+			CALL CreateRequest(PacketSize, Direction, Protocol, NULL, Capture);
 		ELSE
 			SET @SERVER_ID = (SELECT COUNT(*) FROM Server WHERE LOWER(Server_Address) = LOWER(Server));
 			IF(@SERVER_ID = 0) THEN
-				CALL CreateServer(Server, NULL);
+				CALL CreateServer(Server, NULL, NULL);
 			END IF;
-			CALL CreateRequest(PacketSize, Direction, Protocol, (SELECT Server_ID FROM Server WHERE LOWER(Server_Address) = LOWER(Server)), NULL, Capture);
+			CALL CreateRequest(PacketSize, Direction, Protocol, (SELECT Server_ID FROM Server WHERE LOWER(Server_Address) = LOWER(Server)), Capture);
 		END IF;
 	END IF;
 END;
@@ -270,9 +268,9 @@ BEGIN
 	
 END;
 
-CREATE PROCEDURE UpdateRequest(IN ID INT, IN PacketSize FLOAT, IN Direction TINYINT(1), IN DateTime TIMESTAMP, IN Protocol VARCHAR(255), IN Server INT, IN DNS INT, IN Capture INT)
+CREATE PROCEDURE UpdateRequest(IN ID INT, IN PacketSize FLOAT, IN Direction TINYINT(1), IN DateTime TIMESTAMP, IN Protocol VARCHAR(255), IN Server INT, IN Capture INT)
 BEGIN
-	UPDATE Capture_Request SET CaptureRequest_PacketSize = PacketSize, CaptureRequest_Direction = Direction, CaptureRequest_DateTime = DateTime, CaptureRequest_Protocol = Protocol, CaptureRequest_Server = Server, CaptureRequest_DNS = DNS, CaptureRequest_Capture = Capture WHERE CaptureRequest_ID = ID;
+	UPDATE Capture_Request SET CaptureRequest_PacketSize = PacketSize, CaptureRequest_Direction = Direction, CaptureRequest_DateTime = DateTime, CaptureRequest_Protocol = Protocol, CaptureRequest_Server = Server, CaptureRequest_Capture = Capture WHERE CaptureRequest_ID = ID;
 END;
 
 CREATE PROCEDURE DeleteRequestByID(IN ID INT)
