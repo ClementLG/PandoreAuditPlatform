@@ -44,25 +44,23 @@ Note:
 - Pandore Agent and Pandore Server can be installed on the same machine if needed.
 - Only python versions above 3.7 have been tested
 
+### Pandore DB
+
+All the instructions are available [here](xxxxxx)
+
 ### Pandore Agent :
 
-Required python libraries:
-| Libray| PyPI project link|
-| ------ | ------ |
-| Pyshark| [https://pypi.org/project/pyshark/](https://pypi.org/project/pyshark/)
-| MariaDB| [https://pypi.org/project/mariadb/](https://pypi.org/project/mariadb/)
+All the instructions are available [here](./pandore-network/readme.md)
 
-Once the necessary libraries have been installed, you can deploy the agent as follows:
-```sh
-wget XXXXX
-install_pandoreAgent.sh
-```
+### Pandore Analytics
 
-### Pandore server :
+All the instructions are available [here](xxxxx)
 
-```sh
-wget XXXXX
-install_pandoreServer.sh
-```
+### Pandore GUI
+
+All the instructions are available [here](xxxxx)
+
+
+
 
 ----------
