@@ -10,7 +10,7 @@ RUN apk add tshark
 # COPY FILES
 RUN mkdir /app
 COPY requirements.txt /app
-COPY ./sniffer/pandore_* /app
+COPY ./app/pandore_* /app
 
 # INSTALL LIBRARIES
 WORKDIR /app
