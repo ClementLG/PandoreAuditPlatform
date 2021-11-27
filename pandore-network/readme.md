@@ -7,8 +7,8 @@ The agent is the application which will make it possible to send the traffic in 
 ## B - Basic usage
 1) setup python :
 ```
-   apt install python3.8
-   apt install python3-pip
+apt install python3.8
+apt install python3-pip
 ```
 
 2) Install dependencies :
@@ -66,7 +66,3 @@ Environnement variable (-e option) can be used (not develloped yet) :
 | DB_PASSWORD| DB server password
 | DB| DB name
 
-## D - More
-
-The central processing application is available by following this link :
-xx
