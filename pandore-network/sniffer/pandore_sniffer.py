@@ -3,7 +3,7 @@
 # IMPORTS======================================================================
 
 from pandore_config import *
-import pandore_senderV2
+import pandore_sender
 import pyshark
 import json
 import datetime
@@ -22,12 +22,12 @@ class PandoreSniffer:
     def __init__(self, name, duration, description, cnx_type):
         self.name = name
         self.duration = duration
-        self.db = pandore_senderV2.PandoreSenderV2(DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB)
+        self.db = pandore_sender.PandoreSender(DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB)
         self.db.create_capture(name, datetime.datetime.now(), None, description, AUDITED_INTERFACE, cnx_type)
         self.capture_id = self.db.get_capture_id(name)
         self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE,
                                        bpf_filter="( dst net " + str(DEVICE_NETWORK) + " or src net " + str(
-                                           DEVICE_NETWORK) + " ) and not port 1194")
+                                           DEVICE_NETWORK) + " ) and "+"( "+CUSTOM_FILTER+" )")
         # self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, bpf_filter='port 53')
         self.cap.sniff(packet_count=10)
 
