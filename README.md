@@ -50,7 +50,7 @@ All the instructions are available [here](xxxxxx)
 
 ### Pandore Agent :
 
-All the instructions are available [here](./pandore-sniffer/readme.md)
+All the instructions are available [here](./pandore-sniffer/)
 
 ### Pandore Analytics
 
