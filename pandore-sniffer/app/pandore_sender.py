@@ -36,6 +36,10 @@ class PandoreSender:
         self.cursor.callproc('CreateCapture', [name, start_time, end_time, description, interface, connection_type])
         self.conn.commit()
 
+    def update_capture(self, id, name, start_time, end_time, description, interface, connection_type):
+        self.cursor.callproc('UpdateCapture', [id, name, start_time, end_time, description, interface, connection_type])
+        self.conn.commit()
+
     def get_capture_id(self, name):
         self.cursor.execute("SELECT Capture_ID FROM Capture WHERE Capture_Name=\"" + str(name) + "\";")
         result = self.cursor.fetchall()

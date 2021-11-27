@@ -47,7 +47,7 @@ print_agent_config()
 
 r = random.randint(0, 10000000000000)
 
-capture = PandoreSniffer("capture-"+str(r), 60, "essaie voir si ok", "cablé normal")
+capture = PandoreSniffer(CAPTURE_NAME+str(r), CAPTURE_DURATION, CAPTURE_DESCRIPTION, CAPTURE_CNX_TYPE)
 try:
     capture.run()
 except asyncio.exceptions.TimeoutError:
