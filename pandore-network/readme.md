@@ -17,6 +17,11 @@ pip 3 install pyshark
 pip 3 install mysql-connector-python
 ```
 
+or install using the requirements.txt
+```
+pip install --user -r requirements.txt
+```
+
 3) Configure the agent using the file *pandore-config.cfg* 
 
 4) Launch the application *pandore_agent.py*
