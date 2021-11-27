@@ -34,7 +34,9 @@ Pandore uses a number of open source projects to work properly:
 
 ##  _Global architecture_
 
-~~Simplified diagram~~
+Below, the diagram of our solution :
+
+![Pandore solution diagram](docs/global/pandore-global-scheme.pngpandore-global-scheme.png)
 
 ##  _Installation_
 
