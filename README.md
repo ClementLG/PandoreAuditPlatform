@@ -46,7 +46,7 @@ Note:
 
 ### Pandore DB
 
-All the instructions are available [here](xxxxxx)
+All the instructions are available [here](./Database/)
 
 ### Pandore Agent :
 
