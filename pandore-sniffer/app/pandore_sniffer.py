@@ -52,7 +52,8 @@ class PandoreSniffer:
             # Sniff dns asw to get ip:domain_name assoc
             try:
                 if pkt.dns:
-                    self.dns_to_db(sniff_dns_info(pkt))
+                    temp_dns, temp_ips = sniff_dns_info(pkt)
+                    self.dns_to_db(temp_dns, temp_ips)
             except:
                 pass
 
