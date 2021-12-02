@@ -60,8 +60,8 @@ class PandoreSniffer:
             # ADD packet in the DB
             try:
                 self.db.create_request_string(int(pkt.length), determine_direction(pkt.ip.src), highest_layer_protocol,
-                                              determine_ip_saved(pkt.ip.src, pkt.ip.dst),
-                                              check_dns_dictionary(pkt.ip.dst), self.capture_id)
+                                              determine_ip_saved(pkt.ip.src.show, pkt.ip.dst.show),
+                                              check_dns_dictionary(pkt.ip.dst.show), self.capture_id)
                 print(DNS)
             except Exception as e:
                 print(e)
