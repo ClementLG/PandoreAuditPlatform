@@ -68,10 +68,12 @@ class PandoreSniffer:
         except Exception as e:
             print("A error occurred : \n" + e)
 
-    def dns_to_db(self, domain_name):
+    def dns_to_db(self, domain_name, ip_list):
         try:
             if domain_name is not None:
-                self.db.create_dns(domain_name)
+                # self.db.create_dns(domain_name)
+                for ip in ip_list :
+                    self.db.create_server_dns(ip, domain_name)
         except Exception as e:
             print(e)
             pass
@@ -133,7 +135,7 @@ def sniff_dns_info(pkt):
             ip_list_out = out_dns_layer_field(ip_list, "line")
             print("DNS - name : " + str(resp_name) + ", IP list : " + str(ip_list_out) + ")")
             populate_dns_dictionary(resp_name, ip_list)
-            return resp_name
+            return resp_name, ip_list
 
     except:
         pass

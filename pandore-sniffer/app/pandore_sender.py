@@ -53,8 +53,8 @@ class PandoreSender:
         self.conn.cursor().callproc('CreateRequestString', [packet_size, direction, protocol, server_ip, dns_name, capture])
         self.conn.commit()
 
-    def create_dns(self, domain_name):
-        self.cursor.callproc('CreateDNS', [domain_name, None])
+    def create_server_dns(self, ip, domain_name):
+        self.cursor.callproc('CreateServerString', [ip, None, domain_name])
         self.conn.commit()
 
     def close_db(self):
