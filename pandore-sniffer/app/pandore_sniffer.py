@@ -74,7 +74,7 @@ class PandoreSniffer:
             if domain_name is not None:
                 # self.db.create_dns(domain_name)
                 for ip in ip_list:
-                    self.db.create_server_dns(ip.show, domain_name)
+                    self.db.create_server_dns(str(ip.show), str(domain_name))
         except Exception as e:
             print(e)
             pass
