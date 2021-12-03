@@ -131,7 +131,7 @@ def sniff_dns_info(pkt):
     try:
         if pkt.dns.resp_name:
             # print(pkt.dns)
-            resp_name = pkt.dns.resp_name
+            resp_name = pkt.dns.resp_name.show
             ip_list = pkt.dns.a.all_fields
             ip_list_out = out_dns_layer_field(ip_list, "line")
             print("DNS - name : " + str(resp_name) + ", IP list : " + str(ip_list_out) + ")")
