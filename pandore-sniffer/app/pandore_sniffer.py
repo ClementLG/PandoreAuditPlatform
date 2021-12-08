@@ -23,7 +23,8 @@ class PandoreSniffer:
         self.name = name
         self.duration = duration
         self.start_time = datetime.datetime.now()
-        self.end_time = self.start_time + datetime.timedelta(seconds=duration)
+        # self.end_time = self.start_time + datetime.timedelta(seconds=duration)
+        self.end_time = None
         self.db = pandore_sender.PandoreSender(DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB)
         self.db.create_capture(name, self.start_time, self.end_time, description, AUDITED_INTERFACE, cnx_type)
         self.capture_id = self.db.get_capture_id(name)
@@ -35,6 +36,9 @@ class PandoreSniffer:
 
     def run(self):
         self.cap.apply_on_packets(self.pkt_to_db, timeout=self.duration)
+
+    def finish(self):
+        self.db.update_capture(self.capture_id, self.name, self.start_time, datetime.datetime.now(), CAPTURE_DESCRIPTION, AUDITED_INTERFACE, CAPTURE_CNX_TYPE)
 
     def pkt_to_db(self, pkt):
         try:

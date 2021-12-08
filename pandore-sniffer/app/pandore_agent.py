@@ -51,6 +51,7 @@ capture = PandoreSniffer(CAPTURE_NAME+str(r), CAPTURE_DURATION, CAPTURE_DESCRIPT
 try:
     capture.run()
 except asyncio.exceptions.TimeoutError:
+    capture.finish()
     print("\nEnd of the capture !")
 except Exception as e:
     print("An error occurred ! \n"+e)
