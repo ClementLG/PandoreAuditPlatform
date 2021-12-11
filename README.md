@@ -54,11 +54,11 @@ All the instructions are available [here](./pandore-sniffer/)
 
 ### Pandore Analytics
 
-All the instructions are available [here](xxxxx)
+All the instructions are available [here](./pandore-analytics/)
 
 ### Pandore GUI
 
-All the instructions are available [here](xxxxx)
+All the instructions are available [here](./webserver)
 
 
 

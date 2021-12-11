@@ -33,9 +33,6 @@ python3 pandore_agent.py
 
 1) setup docker using the following tutorial :
 https://docs.docker.com/engine/install/debian/
-```
-docker run --rm -it  --cap-add=NET_RAW --cap-add=NET_ADMIN --net=host pandorenetwork
-```
 
 2) Build the pandore network image (You have to be in the dockerfile directory) :
 ```

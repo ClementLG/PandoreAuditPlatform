@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Configuration - Pandore</title>
+    <link rel="icon" href="/static/image/pandore_icon.ico" />
+    <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.css">
+    <link rel="stylesheet" href="/static/bootstrap/icon/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/bootstrap/css/datatables.min.css">
+    <link rel="stylesheet" href="/static/bootstrap/css/bootstrap-select.min.css">
+    <script src="/static/jquery/jquery-3.6.0.min.js"></script>
+    <script src="/static/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/bootstrap/js/datatables.min.js"></script>
+    <script src="/static/bootstrap/js/bootstrap-select.min.js"></script>
+</head>
+    <body class="d-flex flex-column min-vh-100">
+        <header>
+            <nav class="navbar navbar-expand-lg navbar-dark bg-imt-blue">
+                <div class="container-fluid">
+                    <a class="navbar-brand me-5" href="#">Pandore</a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarText">
+                        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="/index">Home</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/saved_captures">Saved captures</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/configuration">Configuration</a>
+                            </li>
+                        </ul>
+                        <span class="navbar-text">
+                            3<sup>rd</sup> year project
+                        </span>
+                    </div>
+                </div>
+            </nav>
+        </header>
+        <content>
+            <div class="container-fluid px-5 py-5">
+                {% if error %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error }}
+                </div>
+                {% endif %}
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="card shadow mb-3">
+                            <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
+                                <div class="row mb-5">
+                                    <div class="col-sm">
+                                        <span class="" style="font-size: 30px;">
+                                            Services list
+                                          </span>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <button class="btn btn-imt-green" data-bs-toggle="modal" data-bs-target="#modalAddService">
+                                            <span class="bi bi-plus"></span> Add new service
+                                        </button>
+                                    </div>
+                                </div>
+                                <table id="services" class="table table-hover" style="width:100%">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th width="1px"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for service in allServices %}
+                                        <tr onmouseover="" style="cursor: pointer;" onclick="window.location.href='service/{{service[0]}}'">
+                                            <td>{{service[1]}}</td>
+                                            <td><span class="bi bi-arrow-right-square-fill"></span></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="card shadow mb-3">
+                            <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
+                                <div class="row mb-5">
+                                    <span class="" style="font-size: 30px;">
+                                        Incomplete server(s)
+                                    </span>
+                                    <strong>Total : {{ unknownServers|length }}</strong>
+                                </div>
+                                
+                                <table class="table table-hover" style="width:100%">
+                                    <thead>
+                                        <tr>
+                                            <th>Value</th>
+                                            <th>Service</th>
+                                            <th>DNS</th>
+                                            <th width="1px"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for server in unknownServers %}
+                                        <tr onmouseover="" style="cursor: pointer;" onclick="assignServer('{{server[1]}}', {{ server[0]}}, {{server[2] or 0 }}, {{ server[3] or 0}})">
+                                            <td>{{server[1]}}</td>
+                                            <td>
+                                                {% if server[2] %}
+                                                    {{ server[4] }}
+                                                {% else %}
+                                                    <div class="text-danger">-</div>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if server[3] %}
+                                                    {{ server[5] }}
+                                                {% else %}
+                                                    <div class="text-danger">-</div>
+                                                {% endif %}
+                                            </td>
+                                            <td><span class="bi bi-gear-fill"></span></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </content>
+        <footer class="mt-auto bg-imt-green py-3 px-3">
+            <div class="row">
+                <div class="col-sm">
+                    <img src="/static/image/logo_imt.png" style="max-height: 60px;">
+                </div>
+                <div class="col-sm text-white">
+                    <div class="row d-flex justify-content-center">
+                        Students : Clément LE GRUIEC, Salma CHAHMI, Nathan OLBORSKI & Hugo HOUILLON
+                    </div>
+                    <div class="row d-flex justify-content-center">
+                        Professors : Xavier LAGRANGE & Julien SAINT MARTIN
+                    </div>
+                </div>
+                <div class="col-sm">
+                    
+                </div>
+            </div>
+        </footer>
+
+        <div class="modal fade" id="modalAssignServerDNS" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                  <form method="post">
+                      <input type="hidden" name="actionType" id="actionType" value="assignServerServiceDNS">
+                      <input type="hidden" name="assignServerID" id="assignServerID" value="">
+                      <input type="hidden" name="assignServerAddress" id="assignServerAddress" value="">
+                      <div class="modal-header">
+                          <h5 class="modal-title">Assign server to service</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body">
+                          <div class="text-danger mb-3"><p><strong>Please assign the following server to an existing service and DNS</strong></p></div>
+                          <div class="mb-3">
+                              <div id="assignServerValue"></div>
+                          </div>
+                          <div class="mb-3">
+                              <label for="assignServerService"><strong>Service : </strong></label>
+                              <select class="selectpicker form-control" id="assignServerService" name="assignServerService" data-live-search="true" title="Select a service...">
+                                  {% for service in allServices %}
+                                  <option value="{{ service[0] }}">{{ service[1] }}</option>
+                                  {% endfor %}
+                              </select>
+                          </div>
+                          <div class="mb-3">
+                              <label for="assignServerDNS"><strong>DNS : </strong></label>
+                              <select class="selectpicker form-control" id="assignServerDNS" name="assignServerDNS" data-live-search="true" title="Select a DNS...">
+                                  {% for service in allDNS %}
+                                  <option value="{{ service[0] }}">{{ service[1] }}</option>
+                                  {% endfor %}
+                              </select>
+                          </div>
+                      </div>
+                      <div class="modal-footer">
+                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                          <button type="submit" class="btn btn-imt-green">Validate</button>
+                      </div>
+                  </form>
+              </div>
+            </div>
+        </div>
+        
+        <div class="modal fade" id="modalAddService" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                  <form method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title">New service</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                      </div>
+                      <div class="modal-body">
+                        <input type="hidden" name="actionType" id="actionType" value="addService">
+                        <label for="addServiceName"><strong>Service name : </strong></label>
+                        <input type="text" class="form-control" id="addServiceName" name="addServiceName">                          
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-imt-green">Validate</button>
+                      </div>
+                  </form>
+              </div>
+            </div>
+        </div>
+
+    </body>
+</html>
+
+<script>
+    $('select').selectpicker();
+
+    $(document).ready(function() {
+        $('#services').DataTable();
+    } );
+
+    function assignServer(server, ID, service, dns){
+        document.getElementById('assignServerValue').innerHTML = '<strong>Value :</strong> ' + server;
+        document.getElementById('assignServerID').value = ID;
+        document.getElementById('assignServerAddress').value = server;
+
+        if (service > 0) {
+            $('#assignServerService').val(service);
+        }
+        else {
+            $('#assignServerService').val(-1);
+        }
+
+        if (dns > 0) {
+            $('#assignServerDNS').val(dns);
+        }
+        else {
+            $('#assignServerDNS').val(-1);
+        }
+
+        $('.selectpicker').selectpicker('refresh');
+        $("#modalAssignServerDNS").modal('show')
+    }
+</script>
