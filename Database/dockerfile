@@ -1,0 +1,14 @@
+FROM mariadb:latest
+
+# CREDITS
+LABEL maintainer="Clement LE GRUIEC <clement.le-gruiec@imt-atlantique.net>"
+LABEL version="1.0"
+
+# SETUP THE DB
+COPY ./PandoreDB.sql /docker-entrypoint-initdb.d/
+ENV MARIADB_ROOT_PASSWORD=pandore
+# EXPOSE PORT
+EXPOSE 3306
+
+# RUN DB
+CMD ["mysqld"]
