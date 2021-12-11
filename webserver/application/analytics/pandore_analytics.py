@@ -44,7 +44,7 @@ class PandoreAnalytics:
             for key in SERVICES_DICTIONARY:
                  if any(srvc in host_info[0].lower() for srvc in SERVICES_DICTIONARY[key]):
                     print("Str 3 - Service found for " + ip + " : " + key)
-                    return keys
+                    return key
         except:
             pass
 
