@@ -1,3 +1,5 @@
+/* maintainer="HUGO Houillon <hugo.houillon@imt-atlantique.net>" */
+
 DROP DATABASE IF EXISTS Pandore;
 CREATE DATABASE Pandore;
 USE Pandore;
@@ -6,7 +8,7 @@ CREATE TABLE Service(
 	Service_ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
 	Service_Name VARCHAR(255) NOT NULL,
 	CONSTRAINT Unique_Service_Name UNIQUE (Service_Name)
-)ENGINE=InnoDB;
+)ENGINE=INNODB;
 
 CREATE TABLE DNS(
 	DNS_ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
@@ -47,46 +49,64 @@ CREATE TABLE Capture_Request(
 )ENGINE=INNODB;
 
 /*Stored procedures for table Service*/
+delimiter #
+
 CREATE PROCEDURE CreateService (IN Name VARCHAR(255))
 BEGIN
 	INSERT INTO Service (Service_Name) VALUES (Name);
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE ReadAllServices()
 BEGIN
 	SELECT * FROM Service ORDER BY Service_Name ASC;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE ReadServiceByID(IN ID INT)
 BEGIN
 	SELECT * FROM Service WHERE Service_ID = ID;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE ReadServiceByName(IN Name VARCHAR(255))
 BEGIN
 	SELECT * FROM Service WHERE Service_Name = Name;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE UpdateService(IN ID INT, IN Name VARCHAR(255))
 BEGIN
 	UPDATE Service SET Service_Name = Name WHERE Service_ID = ID;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE DeleteServiceByID (IN ID INT)
 BEGIN
 	 DELETE FROM Service WHERE Service_ID = ID;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE DeleteServiceByName (IN Name VARCHAR(255))
 BEGIN
 	 DELETE FROM Service WHERE LOWER(Service_Name) = LOWER(Name);
-END;
+END #
 
 /*Stored procedures for table Server*/
+delimiter #
+
 CREATE PROCEDURE CreateServer(IN Address VARCHAR(1000), IN Service INT, IN DNS INT)
 BEGIN
 	INSERT INTO Server (Server_Address, Server_Service, Server_DNS) VALUES (Address, Service, DNS);
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE CreateServerString(IN Address VARCHAR(1000), IN Service INT, IN DNS VARCHAR(1000))
 BEGIN
@@ -99,12 +119,16 @@ BEGIN
 	ELSE
 		INSERT INTO Server (Server_Address, Server_Service, Server_DNS) VALUES (Address, Service, NULL);
 	END IF;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE ReadAllServers()
 BEGIN
 	SELECT * FROM Server ORDER BY Server_Address ASC;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE ReadServersByServiceID(IN Service INT, IN Details TINYINT)
 BEGIN
@@ -113,22 +137,37 @@ BEGIN
 	ELSE
 		SELECT * FROM Server WHERE Server_Service = Service ORDER BY Server_Address ASC;
 	END IF;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE ReadServerByDNSID(IN DNS INT)
 BEGIN
 	SELECT * FROM Server WHERE Server_DNS = DNS;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE ReadServerByID(IN ID INT)
 BEGIN
 	SELECT * FROM Server WHERE Server_ID = ID;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE ReadServerByAddress(IN Address VARCHAR(1000))
 BEGIN
 	SELECT * FROM Server WHERE LOWER(Server_Address) = LOWER(Address);
-END;
+END #
+
+delimiter #
+
+CREATE PROCEDURE ReadIncompleteServers()
+BEGIN
+	SELECT Server_ID, Server_Address, Server_Service, Server_DNS, Service_Name, DNS_Value FROM (Server LEFT JOIN Service ON Server_Service = Service_ID) LEFT JOIN DNS ON Server_DNS = DNS_ID WHERE Server_Service IS NULL;
+END #
+
+delimiter #
 
 CREATE PROCEDURE ReadIncompleteServers()
 BEGIN
@@ -138,7 +177,16 @@ END;
 CREATE PROCEDURE UpdateServer(IN ID INT, IN Address VARCHAR(1000), IN Service INT, IN DNS INT)
 BEGIN
 	UPDATE Server SET Server_Address = Address, Server_Service = Service, Server_DNS = DNS WHERE Server_ID = ID;
-END;
+END #
+
+delimiter #
+
+CREATE PROCEDURE UpdateServerService(IN ID INT, IN Service INT)
+BEGIN
+	UPDATE Server SET Server_Service = Service, Server_DNS = DNS WHERE Server_ID = ID;
+END #
+
+delimiter #
 
 CREATE PROCEDURE UpdateServerService(IN ID INT, IN Service INT)
 BEGIN
@@ -148,70 +196,125 @@ END;
 CREATE PROCEDURE DeleteServerByID(IN ID INT)
 BEGIN
 	DELETE FROM Server WHERE Server_ID = ID;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE DeleteServerByAddress(IN Address VARCHAR(1000))
 BEGIN
 	DELETE FROM Server WHERE LOWER(Server_Address) = LOWER(Address);
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE DeleteServerByServiceID(IN Service INT)
 BEGIN
 	DELETE FROM Server WHERE Server_Service = Service;
-END;
+END #
 
 /*Stored procedures for table DNS*/
+delimiter #
+
 CREATE PROCEDURE CreateDNS(IN Value VARCHAR(1000))
 BEGIN
 	INSERT INTO DNS (DNS_Value) VALUES (Value);
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE ReadAllDNS()
 BEGIN
 	SELECT * FROM DNS ORDER BY DNS_Value ASC;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE ReadDNSByID(IN ID INT)
 BEGIN
 	SELECT * FROM DNS WHERE DNS_ID = ID;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE ReadDNSByValue(IN Value VARCHAR(1000))
 BEGIN
 	SELECT * FROM DNS WHERE LOWER(DNS_Value) = LOWER(Value);
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE UpdateDNS(IN ID INT, IN Value VARCHAR(1000))
 BEGIN
 	UPDATE DNS SET DNS_Value = Address WHERE DNS_ID = ID;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE DeleteDNSByID(IN ID INT)
 BEGIN
 	DELETE FROM DNS WHERE DNS_ID = ID;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE DeleteDNSByValue(IN Value VARCHAR(1000))
 BEGIN
 	DELETE FROM DNS WHERE LOWER(DNS_Value) = LOWER(Value);
-END;
+END #
 
 /*Stored procedures for table Capture*/
+delimiter #
+
 CREATE PROCEDURE CreateCapture(IN Name VARCHAR(255), IN StartTime DATETIME, IN EndTime DATETIME, IN Description VARCHAR(1000), IN Interface VARCHAR(1000), IN ConnectionType VARCHAR(1000))
 BEGIN
 	INSERT INTO Capture (Capture_Name, Capture_StartTime, Capture_EndTime, Capture_Description, Capture_Interface, Capture_ConnectionType) VALUES (Name, StartTime, EndTime, Description, Interface, ConnectionType);
 	SELECT Capture_ID FROM Capture WHERE Capture_Name = Name AND Capture_StartTime = StartTime AND (CASE WHEN EndTime IS NULL THEN EndTime IS NULL ELSE Capture_EndTime = EndTime END) AND (CASE WHEN Description IS NULL THEN Description IS NULL ELSE Capture_Description = Description END) AND (CASE WHEN Interface IS NULL THEN Interface IS NULL ELSE Capture_Interface = Interface END) AND (CASE WHEN ConnectionType IS NULL THEN ConnectionType IS NULL ELSE Capture_ConnectionType = ConnectionType END);
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE ReadAllCaptures()
 BEGIN
 	SELECT * FROM Capture ORDER BY Capture_StartTime, Capture_EndTime;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE ReadCaptureByID(IN ID INT)
 BEGIN
 	SELECT * FROM Capture WHERE Capture_ID = ID;
-END;
+END #
+
+delimiter #
+
+CREATE PROCEDURE ReadSavedCaptures()
+BEGIN
+	SELECT * FROM Capture WHERE Capture_EndTime IS NOT NULL;
+END #
+
+delimiter #
+
+CREATE PROCEDURE ReadCaptureServicesStats(IN ID INT)
+BEGIN
+	/*IN MB*/
+	SELECT * FROM (SELECT Service_Name, ROUND(SUM(CASE WHEN CaptureRequest_Direction = 1 THEN CaptureRequest_PacketSize ELSE 0 END)/(1024*1024), 2) AS UpTrafic, ROUND(SUM(CASE WHEN CaptureRequest_Direction = 0 THEN CaptureRequest_PacketSize ELSE 0 END)/(1024*1024), 2) AS DownTrafic FROM ((Capture_Request LEFT JOIN Server ON CaptureRequest_Server = Server_ID) LEFT JOIN DNS ON Server_DNS = DNS_ID) LEFT JOIN Service ON Server_Service = Service_ID WHERE CaptureRequest_Capture = ID GROUP BY Server_Service) AS sub ORDER BY (UpTrafic+DownTrafic) DESC LIMIT 10;
+END #
+
+delimiter #
+
+CREATE PROCEDURE ReadRunningCapture()
+BEGIN
+	SELECT * FROM Capture WHERE Capture_EndTime IS NULL;
+END #
+
+delimiter #
+
+CREATE PROCEDURE ReadCaptureTotalTrafic(IN Capture INT)
+BEGIN
+	SELECT SUM(CASE WHEN CaptureRequest_Direction = 0 THEN CaptureRequest_PacketSize ELSE 0 END) as DOWN, SUM(CASE WHEN CaptureRequest_Direction = 1 THEN CaptureRequest_PacketSize ELSE 0 END) as UP FROM Capture INNER JOIN Capture_Request ON Capture_ID = CaptureRequest_Capture WHERE Capture_ID = Capture;
+END #
+
+delimiter #
 
 CREATE PROCEDURE ReadSavedCaptures()
 BEGIN
@@ -237,7 +340,16 @@ END;
 CREATE PROCEDURE UpdateCapture(IN ID INT, IN Name VARCHAR(255), IN StartTime DATETIME, IN EndTime DATETIME, IN Description VARCHAR(1000), IN Interface VARCHAR(1000), IN ConnectionType VARCHAR(1000))
 BEGIN
 	UPDATE Capture SET Capture_Name = Name, Capture_StartTime = StartTime, Capture_EndTime = EndTime, Capture_Description = Description, Capture_Interface = Interface, Capture_ConnectionType = ConnectionType WHERE Capture_ID = ID;
-END;
+END #
+
+delimiter #
+
+CREATE PROCEDURE UpdateCaptureEndTime(IN ID INT, IN EndTime DATETIME)
+BEGIN
+	UPDATE Capture SET Capture_EndTime = EndTime WHERE Capture_ID = ID;
+END #
+
+delimiter #
 
 CREATE PROCEDURE UpdateCaptureEndTime(IN ID INT, IN EndTime DATETIME)
 BEGIN
@@ -247,13 +359,17 @@ END;
 CREATE PROCEDURE DeleteCaptureByID(IN ID INT)
 BEGIN
 	DELETE FROM Capture WHERE Capture_ID = ID;
-END; 
+END # 
 
 /*Stored procedures for table Capture_Request*/
+delimiter #
+
 CREATE PROCEDURE CreateRequest(IN PacketSize FLOAT, IN Direction TINYINT(1), IN Protocol VARCHAR(255), IN Server INT, IN Capture INT)
 BEGIN
 	INSERT INTO Capture_Request (CaptureRequest_PacketSize, CaptureRequest_Direction, CaptureRequest_DateTime, CaptureRequest_Protocol, CaptureRequest_Server, CaptureRequest_Capture) VALUES (PacketSize, Direction, CURRENT_TIMESTAMP, Protocol, Server, Capture);
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE CreateRequestString(IN PacketSize FLOAT, IN Direction TINYINT(1), IN Protocol VARCHAR(255), IN Server VARCHAR(1000), IN DNS VARCHAR(1000), IN Capture INT)
 BEGIN
@@ -278,7 +394,9 @@ BEGIN
 			CALL CreateRequest(PacketSize, Direction, Protocol, (SELECT Server_ID FROM Server WHERE LOWER(Server_Address) = LOWER(Server)), Capture);
 		END IF;
 	END IF;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE ReadAllRequests(IN Details TINYINT(1))
 BEGIN
@@ -287,7 +405,9 @@ BEGIN
 	ELSE
 		SELECT * FROM (Capture_Request LEFT JOIN Server ON CaptureRequest_Server = Server_ID) LEFT JOIN DNS ON CaptureRequest_DNS = DNS_ID ORDER BY CaptureRequest_DateTime DESC;
 	END IF;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE ReadRequestsByCaptureID(IN Capture INT, IN Details TINYINT(1))
 BEGIN
@@ -296,7 +416,9 @@ BEGIN
 	ELSE
 		SELECT * FROM (Capture_Request LEFT JOIN Server ON CaptureRequest_Server = Server_ID) LEFT JOIN DNS ON Server_DNS = DNS_ID WHERE CaptureRequest_Capture = Capture;
 	END IF;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE ReadRequestByID(IN ID INT, IN Details TINYINT(1))
 BEGIN
@@ -306,19 +428,25 @@ BEGIN
 		SELECT * FROM (Capture_Request LEFT JOIN Server ON CaptureRequest_Server = Server_ID) LEFT JOIN DNS ON CaptureRequest_DNS = DNS_ID WHERE CaptureRequest_ID = ID;
 	END IF;
 	
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE UpdateRequest(IN ID INT, IN PacketSize FLOAT, IN Direction TINYINT(1), IN DateTime TIMESTAMP, IN Protocol VARCHAR(255), IN Server INT, IN Capture INT)
 BEGIN
 	UPDATE Capture_Request SET CaptureRequest_PacketSize = PacketSize, CaptureRequest_Direction = Direction, CaptureRequest_DateTime = DateTime, CaptureRequest_Protocol = Protocol, CaptureRequest_Server = Server, CaptureRequest_Capture = Capture WHERE CaptureRequest_ID = ID;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE DeleteRequestByID(IN ID INT)
 BEGIN
 	DELETE FROM Capture_Request WHERE CaptureRequest_ID = ID;
-END;
+END #
+
+delimiter #
 
 CREATE PROCEDURE DeleteRequestByCaptureID(IN Capture INT)
 BEGIN
 	DELETE FROM Capture_Request WHERE CaptureRequest_Capture = Capture;
-END;
+END #
