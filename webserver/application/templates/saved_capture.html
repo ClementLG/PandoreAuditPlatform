@@ -1,0 +1,289 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Capture details - {{capture[1]}} - Pandore</title>
+    <link rel="icon" href="/static/image/pandore_icon.ico" />
+    <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.css">
+    <link rel="stylesheet" href="/static/bootstrap/icon/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/bootstrap/css/datatables.min.css">
+    <link rel="stylesheet" href="/static/bootstrap/css/bootstrap-select.min.css">
+    <script src="/static/jquery/jquery-3.6.0.min.js"></script>
+    <script src="/static/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/bootstrap/js/datatables.min.js"></script>
+    <script src="/static/bootstrap/js/bootstrap-select.min.js"></script>
+    <script src="/static/chart/amcharts4/core.js"></script>
+    <script src="/static/chart/amcharts4/charts.js"></script>
+    <script src="/static/chart/amcharts4/themes/animated.js"></script>
+</head>
+    <body class="d-flex flex-column min-vh-100">
+        <header>
+            <nav class="navbar navbar-expand-lg navbar-dark bg-imt-blue">
+                <div class="container-fluid">
+                    <a class="navbar-brand me-5" href="#">Pandore</a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarText">
+                        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="/index">Home</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/saved_captures">Saved captures</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/configuration">Configuration</a>
+                            </li>
+                        </ul>
+                      <span class="navbar-text">
+                      3<sup>rd</sup> year project
+                      </span>
+                  </div>
+                </div>
+            </nav>
+        </header>
+        <content>
+          <div class="container-fluid px-5 py-5">
+            <div class="card shadow mb-3">
+              <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
+                  <div class="row">
+                    <span class="bi bi-info-circle" style="font-size: 30px;">
+                      Capture information
+                    </span>
+                  </div>
+                  <div class="row mt-5 px-5">
+                    <div class="col-sm-4 px-5 mb-5">
+                      <h6 class="">Name</h6>
+                      <hr />
+                      <h5 class="mt-2 text-imt-blue">{{capture[1]}}</h5>
+                    </div>
+                    <div class="col-sm-4 px-5 mb-5">
+                      <h6 class="">Start date time</h6>
+                      <hr />
+                      <h5 class="mt-2 text-imt-green">{{capture[2].strftime('%d/%m/%Y %H:%M:%S')}}</h5>
+                      <p>(dd/MM/yyyy HH:mm:ss)</p>
+                    </div>
+                    <div class="col-sm-4 px-5">
+                      <h6 class="">Duration</h6>
+                      <hr />
+                      <h5 class="mt-2 text-imt-blue">{{duration}}</h5>
+                      <p>(hh:mm:ss)</p>
+                    </div>
+                  </div>
+                  <div class="px-5 mb-5">
+                    <div class="row px-5">
+                      <h6 class="">Description</h6>
+                        <hr />
+                        <h5 class="mt-2 text-imt-green">
+                          {{capture[4]}}
+                        </h5>
+                    </div>
+                  </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-sm-5">
+                <div class="card shadow mb-3">
+                  <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
+                      <div class="row">
+                        <span class="bi bi-arrow-left-right" style="font-size: 30px;">
+                          Trafic
+                        </span>
+                      </div>
+                      <div class="row mt-5 px-5">
+                        <div class="col-sm-4 px-3 mb-5">
+                          <h6 class="">
+                            <span class="bi bi-arrow-down">
+                              Download
+                            </span>
+                          </h6>
+                          <hr />
+                          <h3 class="mt-2 text-imt-blue">{{down_trafic}} <sub>{{down_unit}}</sub></h3>
+                        </div>
+                        <div class="col-sm-4 px-3 mb-5">
+                          <h6 class="">
+                            <span class="bi bi-arrow-up">
+                              Upload
+                            </span>
+                          </h6>
+                          <hr />
+                          <h3 class="mt-2 text-imt-green">{{up_trafic}} <sub>{{up_unit}}</sub></h3>
+                        </div>
+                        <div class="col-sm-4 px-3">
+                          <h6 class="">
+                            <span class="bi bi-chevron-bar-contract">
+                              Ratio <sub>(Down/Up)</sub>
+                            </span>
+                          </h6>
+                          <hr />
+                          <h3 class="mt-2 text-imt-blue">{{ratio}}</h3>
+                        </div>
+                      </div>
+                  </div>
+                </div>
+                <div class="card shadow mb-3">
+                  <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
+                      <div class="row">
+                        <span class="bi bi-activity" style="font-size: 30px;">
+                          Services
+                        </span>
+                      </div>
+                      <div class="row">
+                          <div id="serviceChart" style="height: 600px; width: 100%;"></div>
+                      </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-sm-7">
+                <div class="card shadow mb-3">
+                  <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
+                      <div class="row">
+                        <span class="bi bi-journal-code" style="font-size: 30px;">
+                          Capture details
+                        </span>
+                      </div>
+                      <div class="row mt-5 px-2">
+                        <div class="table-responsive">
+                          <table id="details" class="table" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Size</th>
+                                    <th>Direction</th>
+                                    <th>Protocol</th>
+                                    <th>Server</th>
+                                    <th>DNS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for request in requests %}
+                                <tr>
+                                    <td>{{request[3].strftime('%d/%m/%Y %H:%M:%S')}}</td>
+                                    <td>{{request[1]}} B</td>
+                                    <td>
+                                        {% if request[2] == 1 %}
+                                            <span class="badge bg-imt-green">Up</span>
+                                        {% else %}
+                                            <span class="badge bg-imt-blue">Down</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{request[4]}}</td>
+                                    <td>{{request[8]}}</td>
+                                    <td>
+                                        {% if request[12] %}
+                                            {{request[12]}}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </content>
+        <footer class="mt-auto bg-imt-green py-3 px-3">
+            <div class="row">
+                <div class="col-sm">
+                    <img src="/static/image/logo_imt.png" style="max-height: 60px;">
+                </div>
+                <div class="col-sm text-white">
+                    <div class="row d-flex justify-content-center">
+                        Students : Clément LE GRUIEC, Salma CHAHMI, Nathan OLBORSKI & Hugo HOUILLON
+                    </div>
+                    <div class="row d-flex justify-content-center">
+                        Professors : Xavier LAGRANGE & Julien SAINT MARTIN
+                    </div>
+                </div>
+                <div class="col-sm">
+                    
+                </div>
+            </div>
+        </footer>
+    </body>
+</html>
+
+<script>
+
+    $(document).ready(function() {
+        $('#details').DataTable();
+    } );
+  
+    am4core.ready(function() {
+    
+    // Themes begin
+    am4core.useTheme(am4themes_animated);
+    // Themes end
+    
+    var chart = am4core.create("serviceChart", am4charts.RadarChart);
+    chart.hiddenState.properties.opacity = 0; // this creates initial fade-in
+    
+    var label = chart.createChild(am4core.Label);
+    label.exportable = false;
+    
+        chart.data = [
+            {% for stat in stats %}
+                {
+                    {% if stat[0] %}
+                    category: "{{stat[0]}}",
+                    {% else %}
+                    category: "Unknown",
+                    {% endif %}
+                    value1: {{ stat[2] }},
+                    value2: {{ stat[1] }}
+                } {%if stat != stats[(stats | length) - 1] %},{% endif %}
+            {% endfor %}
+    ];
+    chart.radius = am4core.percent(80);
+    chart.startAngle = 270 - 180;
+    chart.endAngle = 270 + 180;
+    chart.innerRadius = am4core.percent(30);
+    
+    var categoryAxis = chart.xAxes.push(new am4charts.CategoryAxis());
+    categoryAxis.dataFields.category = "category";
+    categoryAxis.renderer.labels.template.location = 0.5;
+    categoryAxis.renderer.grid.template.strokeOpacity = 0.1;
+    categoryAxis.renderer.axisFills.template.disabled = true;
+    categoryAxis.mouseEnabled = false;
+    
+    var valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
+    valueAxis.tooltip.disabled = true;
+    valueAxis.renderer.grid.template.strokeOpacity = 0.05;
+    valueAxis.renderer.axisFills.template.disabled = true;
+    valueAxis.renderer.axisAngle = 260;
+    valueAxis.renderer.labels.template.horizontalCenter = "right";
+    valueAxis.min = 0;
+    
+    var series1 = chart.series.push(new am4charts.RadarColumnSeries());
+    series1.columns.template.radarColumn.strokeOpacity = 1;
+    series1.name = "Download (MB)";
+    series1.dataFields.categoryX = "category";
+    series1.columns.template.tooltipText = "{name}: {valueY.value}";
+    series1.dataFields.valueY = "value1";
+    series1.stacked = true;
+    series1.columns.template.fill = am4core.color('#afcb37');
+    series1.columns.template.stroke = am4core.color('#afcb37');
+    
+    var series2 = chart.series.push(new am4charts.RadarColumnSeries());
+    series2.columns.template.radarColumn.strokeOpacity = 1;
+    series2.columns.template.tooltipText = "{name}: {valueY.value}";
+    series2.name = "Upload (MB)";
+    series2.dataFields.categoryX = "category";
+    series2.dataFields.valueY = "value2";
+    series2.stacked = true;
+    series2.columns.template.fill = am4core.color('#00b5d5');
+    series2.columns.template.stroke = am4core.color('#00b5d5');
+    
+    chart.seriesContainer.zIndex = -1;
+
+    }); // end am4core.ready()
+    </script>

@@ -1,0 +1,95 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Waiting for capture - Pandore</title>
+    <link rel="icon" href="/static/image/pandore_icon.ico" />
+    <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.css">
+    <link rel="stylesheet" href="/static/bootstrap/icon/bootstrap-icons.css">
+    <script src="/static/jquery/jquery-3.6.0.min.js"></script>
+    <script src="/static/bootstrap/js/bootstrap.bundle.min.js"></script>
+</head>
+<body class="d-flex flex-column min-vh-100">
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-imt-blue">
+            <div class="container-fluid">
+                <a class="navbar-brand me-5" href="#">Pandore</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarText">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="/index">Home</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/saved_captures">Saved captures</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/configuration">Configuration</a>
+                        </li>
+                    </ul>
+                    <span class="navbar-text">
+                        3<sup>rd</sup> year project
+                    </span>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <content>
+        <div class="container-fluid px-5 py-5">
+            <div class="row text-center text-imt-darkblue">
+                <h1>Waiting for a new capture ...</h1>
+            </div>
+            <div class="row text-center">
+                <span class="bi bi-hourglass-split" style="font-size: 100px; color: rgb(0, 30, 66);"></span>
+            </div>
+            <div class="row">
+
+            </div>
+        </div>
+    </content>
+    <footer class="mt-auto bg-imt-green py-3 px-3">
+        <div class="row">
+            <div class="col-sm">
+                <img src="/static/image/logo_imt.png" style="max-height: 60px;">
+            </div>
+            <div class="col-sm text-white">
+                <div class="row d-flex justify-content-center">
+                    Students : Clément LE GRUIEC, Salma CHAHMI, Nathan OLBORSKI & Hugo HOUILLON
+                </div>
+                <div class="row d-flex justify-content-center">
+                    Professors : Xavier LAGRANGE & Julien SAINT MARTIN
+                </div>
+            </div>
+            <div class="col-sm">
+
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
+
+<script>
+    ajaxError = false;
+
+    var intervalId = window.setInterval(function () {
+        if (!ajaxError) {
+            $.ajax({
+                url: "check_capture_running",
+                type: "POST",
+                async: false,
+                success: function (response, textStatus, jqXHR) {
+                    if (response == '1') {
+                        location.reload();
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    ajaxError = true;
+                    location.reload();
+                }
+            });
+        }
+    }, 1000);
+</script>
