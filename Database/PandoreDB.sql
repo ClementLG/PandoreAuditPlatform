@@ -169,11 +169,6 @@ END #
 
 delimiter #
 
-CREATE PROCEDURE ReadIncompleteServers()
-BEGIN
-	SELECT Server_ID, Server_Address, Server_Service, Server_DNS, Service_Name, DNS_Value FROM (Server LEFT JOIN Service ON Server_Service = Service_ID) LEFT JOIN DNS ON Server_DNS = DNS_ID WHERE Server_Service IS NULL;
-END;
-
 CREATE PROCEDURE UpdateServer(IN ID INT, IN Address VARCHAR(1000), IN Service INT, IN DNS INT)
 BEGIN
 	UPDATE Server SET Server_Address = Address, Server_Service = Service, Server_DNS = DNS WHERE Server_ID = ID;
@@ -187,11 +182,6 @@ BEGIN
 END #
 
 delimiter #
-
-CREATE PROCEDURE UpdateServerService(IN ID INT, IN Service INT)
-BEGIN
-	UPDATE Server SET Server_Service = Service, Server_DNS = DNS WHERE Server_ID = ID;
-END;
 
 CREATE PROCEDURE DeleteServerByID(IN ID INT)
 BEGIN
@@ -316,27 +306,6 @@ END #
 
 delimiter #
 
-CREATE PROCEDURE ReadSavedCaptures()
-BEGIN
-	SELECT * FROM Capture WHERE Capture_EndTime IS NOT NULL;
-END;
-
-CREATE PROCEDURE ReadCaptureServicesStats(IN ID INT)
-BEGIN
-	/*IN MB*/
-	SELECT * FROM (SELECT Service_Name, ROUND(SUM(CASE WHEN CaptureRequest_Direction = 1 THEN CaptureRequest_PacketSize ELSE 0 END)/(1024*1024), 2) AS UpTrafic, ROUND(SUM(CASE WHEN CaptureRequest_Direction = 0 THEN CaptureRequest_PacketSize ELSE 0 END)/(1024*1024), 2) AS DownTrafic FROM ((Capture_Request LEFT JOIN Server ON CaptureRequest_Server = Server_ID) LEFT JOIN DNS ON Server_DNS = DNS_ID) LEFT JOIN Service ON Server_Service = Service_ID WHERE CaptureRequest_Capture = ID GROUP BY Server_Service) AS sub ORDER BY (UpTrafic+DownTrafic) DESC LIMIT 10;
-END;
-
-CREATE PROCEDURE ReadRunningCapture()
-BEGIN
-	SELECT * FROM Capture WHERE Capture_EndTime IS NULL;
-END;
-
-CREATE PROCEDURE ReadCaptureTotalTrafic(IN Capture INT)
-BEGIN
-	SELECT SUM(CASE WHEN CaptureRequest_Direction = 0 THEN CaptureRequest_PacketSize ELSE 0 END) as DOWN, SUM(CASE WHEN CaptureRequest_Direction = 1 THEN CaptureRequest_PacketSize ELSE 0 END) as UP FROM Capture INNER JOIN Capture_Request ON Capture_ID = CaptureRequest_Capture WHERE Capture_ID = Capture;
-END;
-
 CREATE PROCEDURE UpdateCapture(IN ID INT, IN Name VARCHAR(255), IN StartTime DATETIME, IN EndTime DATETIME, IN Description VARCHAR(1000), IN Interface VARCHAR(1000), IN ConnectionType VARCHAR(1000))
 BEGIN
 	UPDATE Capture SET Capture_Name = Name, Capture_StartTime = StartTime, Capture_EndTime = EndTime, Capture_Description = Description, Capture_Interface = Interface, Capture_ConnectionType = ConnectionType WHERE Capture_ID = ID;
@@ -350,11 +319,6 @@ BEGIN
 END #
 
 delimiter #
-
-CREATE PROCEDURE UpdateCaptureEndTime(IN ID INT, IN EndTime DATETIME)
-BEGIN
-	UPDATE Capture SET Capture_EndTime = EndTime WHERE Capture_ID = ID;
-END;
 
 CREATE PROCEDURE DeleteCaptureByID(IN ID INT)
 BEGIN
