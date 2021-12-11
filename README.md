@@ -1,7 +1,7 @@
 
 # Pandore
 
-![pandore](./docs/pandore_icon.png)
+<img src="./docs/pandore_icon.png" width="60">
 
 ## _An IMT ATLANTIQUE project_
 
