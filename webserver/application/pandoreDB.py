@@ -1,7 +1,6 @@
 import mysql.connector
 import sys
-from application import configuration
-from application import pandoreException
+from application import configuration, pandoreException
 
 class PandoreDB:
 
@@ -94,6 +93,26 @@ class PandoreDB:
             res = result.fetchall()
         return res
 
+    def find_dns_by_value(self, dns):
+        self.cursor.callproc('ReadDNSByValue', [dns])
+        for result in self.cursor.stored_results():
+            res = result.fetchall()
+            if len(res) == 0:
+                return None
+            else:
+                return res[0]
+
+    def create_dns(self, dns):
+        if not dns:
+            raise pandoreException.PandoreException("DNS is missing");
+        elif len(dns) < 1:
+            raise pandoreException.PandoreException("DNS value minimum size is 1")
+        elif len(dns) > 1000:
+            raise pandoreException.PandoreException("DNS value maximum size is 1000")
+        elif not self.find_dns_by_value(dns):   
+            self.cursor.callproc('CreateDNS', [dns])
+            self.conn.commit()
+
     # Server
     def find_incomplete_servers(self):
        self.cursor.callproc('ReadIncompleteServers')
@@ -182,7 +201,10 @@ class PandoreDB:
         self.cursor.callproc('ReadServiceByName', [name])
         for result in self.cursor.stored_results():
             res = result.fetchall()
-        return res
+            if len(res) > 0:
+                return res[0]
+            else:
+                return None
 
     def find_service_all_servers(self, id, details):
         self.cursor.callproc('ReadServersByServiceID', [id, details])
@@ -197,7 +219,7 @@ class PandoreDB:
             raise pandoreException.PandoreException("Service name minimum size is 1");
         elif(len(name) > 255):
             raise pandoreException.PandoreException("Service name can't exceed 255 characters");
-        elif(len(self.find_service_by_name(name)) > 0):
+        elif(self.find_service_by_name(name)):
             raise pandoreException.PandoreException("This service name is already used");
         self.cursor.callproc('CreateService', [str(name), ])
         self.conn.commit()

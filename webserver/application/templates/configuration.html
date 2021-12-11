@@ -86,12 +86,22 @@
                         <div class="card shadow mb-3">
                             <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
                                 <div class="row mb-5">
-                                    <span class="" style="font-size: 30px;">
-                                        Incomplete server(s)
-                                    </span>
-                                    <strong>Total : {{ unknownServers|length }}</strong>
+                                    <div class="col-sm">
+                                        <span class="" style="font-size: 30px;">
+                                            Incomplete server(s)
+                                        </span>
+                                        <strong>Total : {{ unknownServers|length }}</strong>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <form method="post">
+                                            <input type="hidden" name="actionType" value="autoServerClassification" />
+                                            <button class="btn btn-imt-green" type="submit">
+                                                <span class="bi bi-gear-wide-connected"></span> Automatic classification
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
-                                
+
                                 <table class="table table-hover" style="width:100%">
                                     <thead>
                                         <tr>
@@ -107,16 +117,16 @@
                                             <td>{{server[1]}}</td>
                                             <td>
                                                 {% if server[2] %}
-                                                    {{ server[4] }}
+                                                {{ server[4] }}
                                                 {% else %}
-                                                    <div class="text-danger">-</div>
+                                                <div class="text-danger">-</div>
                                                 {% endif %}
                                             </td>
                                             <td>
                                                 {% if server[3] %}
-                                                    {{ server[5] }}
+                                                {{ server[5] }}
                                                 {% else %}
-                                                    <div class="text-danger">-</div>
+                                                <div class="text-danger">-</div>
                                                 {% endif %}
                                             </td>
                                             <td><span class="bi bi-gear-fill"></span></td>

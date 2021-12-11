@@ -1,6 +1,7 @@
 from flask import Flask, request, redirect, url_for, render_template, json
 import datetime
 from application import app, pandoreDB, pandoreException
+from application.analytics.pandore_analytics import PandoreAnalytics
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -192,7 +193,6 @@ def service(id):
                     if(len(request.values) != 2): raise pandoreException.PandoreException("Invalid number of arguments");
                     db.remove_service_from_server(request.form['removeServerID'])
                     serversInfo = db.find_service_all_servers(id, True)
-
         db.close_db()
         return render_template(
             "service.html",
@@ -343,6 +343,16 @@ def services():
                         request.form['assignServerService'],
                         request.form['assignServerDNS']
                     )
+                servers = db.find_incomplete_servers()
+            elif(request.form['actionType'] == 'autoServerClassification'):
+                analytics = PandoreAnalytics()
+                for server in servers:
+                    serviceName = analytics.analyse_ip_dns(server[1],server[5])
+                    if serviceName:
+                        found_service = db.find_service_by_name(serviceName)
+                        if found_service:
+                            db.update_server(server[0], server[1], found_service[0], server[3])
+
                 servers = db.find_incomplete_servers()
 
         db.close_db()

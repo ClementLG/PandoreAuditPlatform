@@ -6,7 +6,7 @@
 from ipwhois import IPWhois  # IP
 from whois import whois  # DomainName
 import socket # DomainName
-from services_dictionary import SERVICES_DICTIONARY
+from application.analytics.services_dictionary import SERVICES_DICTIONARY
 
 
 # VARIABLES=====================================================================
@@ -44,7 +44,7 @@ class PandoreAnalytics:
             for key in SERVICES_DICTIONARY:
                  if any(srvc in host_info[0].lower() for srvc in SERVICES_DICTIONARY[key]):
                     print("Str 3 - Service found for " + ip + " : " + key)
-                    return key
+                    return keys
         except:
             pass
 
