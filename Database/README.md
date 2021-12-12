@@ -10,6 +10,8 @@ Setup MariaDB using the following tutorial [here](https://www.digitalocean.com/c
 
 ## C - Docker usage
 
+#### Setup guide
+
 1) setup docker using the following tutorial :
 https://docs.docker.com/engine/install/debian/
 
@@ -35,10 +37,10 @@ The -v /my/own/datadir:/var/lib/mysql part of the command mounts the /my/own/dat
 
 #### Default values
 
-User: root
-Password: pandore
-Database: Pandore
-Port: 3306
+- User: root
+- Password: pandore
+- Database: Pandore
+- Port: 3306
 
 #### Environnement variable (-e option) -- (not develloped yet) :
 
