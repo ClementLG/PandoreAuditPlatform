@@ -1,0 +1,19 @@
+FROM python:3.9-alpine
+
+# CREDITS
+LABEL maintainer="Clement LE GRUIEC <clement.le-gruiec@imt-atlantique.net>"
+LABEL version="1.0"
+
+# COPY FILES
+RUN mkdir /app
+COPY requirements.txt /app
+COPY runserver.py /app
+COPY ./application /app/application
+
+# INSTALL LIBRARIES
+WORKDIR /app
+RUN pip install --user -r requirements.txt
+
+EXPOSE 5555
+
+CMD ["python3", "/app/runserver.py"]
