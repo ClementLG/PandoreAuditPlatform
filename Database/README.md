@@ -30,10 +30,17 @@ docker run -p 3306:3306/tcp --name pandoredb pandore-db
 ```
 docker run -v /my/own/datadir:/var/lib/mysql -p 3306:3306/tcp --name pandoredb pandore-db
 ```
+
 The -v /my/own/datadir:/var/lib/mysql part of the command mounts the /my/own/datadir directory from the underlying host system as /var/lib/mysql inside the container, where MariaDB by default will write its data files.
 
+#### Default values
 
-5) Environnement variable (-e option) can be used (not develloped yet) :
+User: root
+Password: pandore
+Database: Pandore
+Port: 3306
+
+#### Environnement variable (-e option) -- (not develloped yet) :
 
 | VARIABLE| VALUE|
 | ------ | ------ |
