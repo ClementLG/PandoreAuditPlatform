@@ -23,10 +23,10 @@
                     <div class="collapse navbar-collapse" id="navbarText">
                         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                             <li class="nav-item">
-                                <a class="nav-link active" aria-current="page" href="/index">Home</a>
+                                <a class="nav-link" href="/index">Home</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="/saved_captures">Saved captures</a>
+                                <a class="nav-link active" aria-current="page" href="/saved_captures">Saved captures</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="/configuration">Configuration</a>
@@ -59,10 +59,10 @@
                             </thead>
                             <tbody>
                                 {% for capture in captures %}
-                                <tr onmouseover="" style="cursor: pointer;" onclick="window.location.href='saved_capture/{{capture[0]}}'">
-                                    <td>{{capture[2].strftime('%d/%m/%Y %H:%M:%S')}}</td>
-                                    <td>{{capture[1]}}</td>
-                                    <td>{{capture[3].strftime('%d/%m/%Y %H:%M:%S')}}</td>
+                                <tr onmouseover="" style="cursor: pointer;" onclick="window.location.href='saved_capture/{{capture.ID}}'">
+                                    <td>{{capture.StartTime.strftime('%d/%m/%Y %H:%M:%S')}}</td>
+                                    <td>{{capture.Name}}</td>
+                                    <td>{{capture.EndTime.strftime('%d/%m/%Y %H:%M:%S')}}</td>
                                     <td><span class="bi bi-arrow-right-square-fill"></span></td>
                                 </tr>
                                 {% endfor %}

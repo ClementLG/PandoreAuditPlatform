@@ -1,7 +1,10 @@
+from dns.name import Name
 from flask import Flask, request, redirect, url_for, render_template, json
-import datetime
+from datetime import datetime
 from application import app, pandoreDB, pandoreException
 from application.analytics.pandore_analytics import PandoreAnalytics
+from application.models import *
+import threading, multiprocessing
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -63,15 +66,15 @@ def get_running_capture():
         db = pandoreDB.PandoreDB()
         runningCapture = db.get_running_capture()
         if(runningCapture):
-            captureInfo = db.find_capture_by_id(runningCapture[0])
-            stats = db.get_capture_service_stat(runningCapture[0])
-            total_trafic = db.get_capture_total_trafic(runningCapture[0])
+            captureInfo = db.find_capture_by_id(runningCapture.ID)
+            stats = db.get_capture_service_stat(runningCapture.ID)
+            total_trafic = db.get_capture_total_trafic(runningCapture.ID)
         db.close_db()
 
         if not runningCapture:
             return json.jsonify(running="0")
 
-        duration_second = (datetime.datetime.now() - captureInfo[2]).total_seconds()
+        duration_second = (datetime.now() - captureInfo.StartTime).total_seconds()
     
         minutes = 0
         hours = 0
@@ -144,7 +147,7 @@ def get_running_capture():
                 name = "Unknown"
             statistics.append([name, str(stat[1]), str(stat[2])])
 
-        return json.jsonify(running="1", stats=statistics, name=captureInfo[1], startTime=captureInfo[2], description=captureInfo[4], downTrafic=down_trafic_nb, downTraficUnit=down_trafic_unit, upTrafic=up_trafic_nb, upTraficUnit=up_trafic_unit, duration=string_duration, ratio=up_down_ratio)
+        return json.jsonify(running="1", stats=statistics, name=captureInfo.Name, startTime=captureInfo.StartTime, description=captureInfo.Description, downTrafic=down_trafic_nb, downTraficUnit=down_trafic_unit, upTrafic=up_trafic_nb, upTraficUnit=up_trafic_unit, duration=string_duration, ratio=up_down_ratio)
     except Exception as e:
         try:
             if db :
@@ -183,15 +186,14 @@ def service(id):
         db = pandoreDB.PandoreDB()
         serviceInfo = db.find_service_by_id(id)
         serversInfo = db.find_service_all_servers(id, True)
-
         if(request.method == 'POST'):
                 if(request.form['actionType'] == 'addServer'):
                     if(len(request.values) < 3 or len(request.values) > 4): raise pandoreException.PandoreException("Invalid number of arguments");
-                    db.create_server_dns(request.form['addServerService'], request.form['addServerValue'], request.form['addServerDNS'] or None)
-                    serversInfo = db.find_service_all_servers(id)
+                    db.create_server_dns(db.find_service_by_id(int(request.form['addServerService'])), request.form['addServerValue'], request.form['addServerDNS'] or None)
+                    serversInfo = db.find_service_all_servers(id, True)
                 elif(request.form['actionType'] == 'removeServer'):
                     if(len(request.values) != 2): raise pandoreException.PandoreException("Invalid number of arguments");
-                    db.remove_service_from_server(request.form['removeServerID'])
+                    db.remove_service_from_server(int(request.form['removeServerID']))
                     serversInfo = db.find_service_all_servers(id, True)
         db.close_db()
         return render_template(
@@ -226,13 +228,13 @@ def saved_capture(id):
             return redirect(url_for('index'))
 
         db = pandoreDB.PandoreDB()
-        captureInfo = db.find_capture_by_id(id)
-        captureRequests = db.find_all_capture_request(id, 1)
+        capture = db.find_capture_by_id(id)
+        captureRequests = db.find_all_capture_request_not_detailed(id)
         statistics = db.get_capture_service_stat(id)
         total_trafic = db.get_capture_total_trafic(id)
         db.close_db()
 
-        if not captureInfo:
+        if not capture:
             return redirect(url_for('saved_captures'))
 
         minutes = 0
@@ -271,7 +273,7 @@ def saved_capture(id):
             down_trafic_nb = str(int(down_trafic_nb/(1024*1024)))
             down_trafic_unit = "MB"
 
-        duration_second = (captureInfo[3] - captureInfo[2]).seconds
+        duration_second = (capture.EndTime - capture.StartTime).total_seconds()
     
         while(duration_second >= 3600):
             duration_second -= 3600
@@ -298,9 +300,36 @@ def saved_capture(id):
 
         string_duration = hours + ":" + minutes + ":" + duration_second
 
+        requests_history = {}
+        request_history_unit = "sec"
+
+        if (capture.EndTime - capture.StartTime).total_seconds() > 3600:
+            request_history_unit = "min"
+            for request in captureRequests:
+                minute = int((request.DateTime - capture.StartTime).total_seconds()/60)
+                if minute in requests_history:
+                    requests_history[minute] += 1
+                else:
+                    requests_history[minute] = 1
+
+            for i in range(int((capture.EndTime - capture.StartTime).total_seconds()/60)):
+                if i not in requests_history:
+                    requests_history[i] = 0
+        else:
+            for request in captureRequests:
+                second = int((request.DateTime - capture.StartTime).total_seconds())
+                if second in requests_history:
+                    requests_history[second] += 1
+                else:
+                    requests_history[second] = 1
+
+            for i in range(int((capture.EndTime - capture.StartTime).total_seconds())):
+                if i not in requests_history:
+                    requests_history[i] = 0
+
         return render_template(
                 "saved_capture.html",
-                capture = captureInfo,
+                capture = capture,
                 requests = captureRequests,
                 duration = string_duration,
                 up_trafic = up_trafic_nb,
@@ -308,7 +337,9 @@ def saved_capture(id):
                 up_unit = up_trafic_unit,
                 down_unit = down_trafic_unit,
                 ratio = up_down_ratio,
-                stats = statistics
+                stats = statistics,
+                requests_history = dict(sorted(requests_history.items())),
+                request_history_unit = request_history_unit
             )
     except Exception as e:
         try:
@@ -333,26 +364,21 @@ def services():
         if(request.method == 'POST'):
             if(request.form['actionType'] == 'addService'):
                 if(len(request.values) != 2): raise pandoreException.PandoreException("Invalid number of arguments");
-                db.create_service(request.form['addServiceName'])
+                db.create_service(PandoreService(None, request.form['addServiceName']))
                 services = db.find_all_services()
             elif(request.form['actionType'] == 'assignServerServiceDNS'):
                 if(len(request.values) != 5): raise pandoreException.PandoreException("Invalid number of arguments");
-                db.update_server(
-                        request.form['assignServerID'],
-                        request.form['assignServerAddress'],
-                        request.form['assignServerService'],
-                        request.form['assignServerDNS']
-                    )
+                db.update_server(PandoreServer(int(request.form['assignServerID']), request.form['assignServerAddress'], db.find_dns_by_id(int(request.form['assignServerDNS'])), db.find_service_by_id(int(request.form['assignServerService']))))
                 servers = db.find_incomplete_servers()
             elif(request.form['actionType'] == 'autoServerClassification'):
-                analytics = PandoreAnalytics()
-                for server in servers:
-                    serviceName = analytics.analyse_ip_dns(server[1],server[5])
-                    if serviceName:
-                        found_service = db.find_service_by_name(serviceName)
-                        if found_service:
-                            db.update_server(server[0], server[1], found_service[0], server[3])
-
+                arrays = split_array(servers, round(len(servers)/multiprocessing.cpu_count()))
+                threads = []
+                for array in arrays:
+                    worker_thread = threading.Thread(target=threadFunction, args=(array,db,))
+                    threads.append(worker_thread)
+                    worker_thread.start()
+                for thread in threads:
+                    thread.join()
                 servers = db.find_incomplete_servers()
 
         db.close_db()
@@ -383,3 +409,22 @@ def services():
             "error.html",
             error=e
         )
+
+def split_array(arr, size):
+     arrs = []
+     while len(arr) > size:
+         pice = arr[:size]
+         arrs.append(pice)
+         arr   = arr[size:]
+     arrs.append(arr)
+     return arrs
+
+def threadFunction(servers: list[PandoreServer], db:pandoreDB.PandoreDB):
+    analytics = PandoreAnalytics()
+    for server in servers:
+        serviceName = analytics.analyse_ip_dns(server.Address, None if server.DNS is None else server.DNS.Value)
+        if serviceName:
+            found_service = db.find_service_by_name(serviceName)
+            if found_service:
+                server.Service = found_service
+                db.update_server(server)

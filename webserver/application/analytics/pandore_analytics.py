@@ -40,6 +40,7 @@ class PandoreAnalytics:
 
         # 3rd try a reverse DNS lookup
         try:
+            socket.setdefaulttimeout(3)
             host_info = socket.gethostbyaddr(ip)
             for key in SERVICES_DICTIONARY:
                  if any(srvc in host_info[0].lower() for srvc in SERVICES_DICTIONARY[key]):

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>{{service[1]}} - Pandore</title>
+    <title>{{service.Name}} - Pandore</title>
     <link rel="icon" href="/static/image/pandore_icon.ico" />
     <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.css">
     <link rel="stylesheet" href="/static/bootstrap/icon/bootstrap-icons.css">
@@ -22,13 +22,13 @@
                     <div class="collapse navbar-collapse" id="navbarText">
                         <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                             <li class="nav-item">
-                                <a class="nav-link active" aria-current="page" href="/index">Home</a>
+                                <a class="nav-link" href="/index">Home</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="/saved_captures">Saved captures</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="/configuration">Configuration</a>
+                                <a class="nav-link active" aria-current="page" href="/configuration">Configuration</a>
                             </li>
                         </ul>
                         <span class="navbar-text">
@@ -45,7 +45,7 @@
                     {{ error }}
                 </div>
                 {% endif %}
-                <h2>{{service[1]}}</h2>
+                <h2>{{service.Name}}</h2>
                 <hr />
                 <div class="card shadow mb-3">
                     <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
@@ -72,15 +72,15 @@
                             <tbody>
                                 {% for server in servers %}
                                 <tr>
-                                    <td>{{server[1]}}</td>
+                                    <td>{{server.Address}}</td>
                                     <td>
-                                        {% if server[5] %}
-                                            {{ server[5] }}
+                                        {% if server.DNS %}
+                                            {{ server.DNS.Value }}
                                         {% else %}
                                             <div class="text-danger">-</div>
                                         {% endif %}
                                     </td>
-                                    <td onmouseover="" style="cursor: pointer;" onclick="deleteServer('{{server[1]}}', {{server[0]}})"><button class="btn btn-sm btn-danger"><span class="bi bi-trash"></span></button></td>
+                                    <td onmouseover="" style="cursor: pointer;" onclick="deleteServer('{{server.Address}}', {{server.ID}})"><button class="btn btn-sm btn-danger"><span class="bi bi-trash"></span></button></td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -118,7 +118,7 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <div class="text-danger"><p><strong>Do you really want to remove the following server from {{service[1]}}?</strong></p></div>
+                            <div class="text-danger"><p><strong>Do you really want to remove the following server from {{service.Name}}?</strong></p></div>
                             <div id="removeServerValue"></div>
                             <input type="hidden" name="removeServerID" id="removeServerID" value="">
                             <input type="hidden" name="actionType" id="actionType" value="removeServer">
@@ -137,12 +137,12 @@
                 <div class="modal-content">
                     <form method="post">
                         <div class="modal-header">
-                            <h5 class="modal-title">New server for {{service[1]}}</h5>
+                            <h5 class="modal-title">New server for {{service.Name}}</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <input type="hidden" name="actionType" id="actionType" value="addServer">
-                            <input type="hidden" name="addServerService" id="addServerService" value="{{service[0]}}">
+                            <input type="hidden" name="addServerService" id="addServerService" value="{{service.ID}}">
                             <label for="addServerValue"><strong>Server value : </strong></label>
                             <input type="text" class="form-control mb-3" id="addServerValue" name="addServerValue">
                             <label for="addServerValue"><strong>Server DNS : </strong></label>
