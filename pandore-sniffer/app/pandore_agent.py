@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # INFO=========================================================================
 __project__ = "Pandore"
-__author__ = "Clement LE GRUIEC"
+__maintainer__ = "Clement LE GRUIEC"
 __version__ = "1.0"
 __Created__ = "09/10/2021"
 __team__ = ["Clement LE GRUIEC", "Hugo HOUILLON", "Salma CHAHMI", "Nathan OLBORSKI"]
@@ -15,9 +15,11 @@ __description__ = "The agent is the application which allow to send the network 
 # IMPORTS======================================================================
 import asyncio.exceptions
 import random
+import os
+import pandore_config
 
-from pandore_config import *
 from pandore_sniffer import PandoreSniffer
+
 
 # FUNCTIONS====================================================================
 
@@ -26,7 +28,7 @@ def print_project_info():
     print(' INFOS')
     print('# ' + '=' * 50)
     print('Project : ' + __project__)
-    print('Author: ' + __author__)
+    print('Maintainer : ' + __maintainer__)
     print('Full team: ' + ', '.join(__team__))
     print('Realised with the school: ' + __school__)
     print('# ' + '=' * 50)
@@ -36,22 +38,53 @@ def print_agent_config():
     print('# ' + '=' * 50)
     print(' CONFIG')
     print('# ' + '=' * 50)
-    print('Audited interface: ' + AUDITED_INTERFACE)
-    print('Device network: ' + DEVICE_NETWORK)
+    print('Audited interface: ' + pandore_config.AUDITED_INTERFACE)
+    print('Device network: ' + pandore_config.DEVICE_NETWORK)
     print('# ' + '=' * 50)
 
 
+def update_variable_docker():
+    if os.environ.get('PANDORE_AUDITED_INTERFACE') is not None:
+        pandore_config.AUDITED_INTERFACE = os.environ.get('PANDORE_AUDITED_INTERFACE')
+    if os.environ.get('PANDORE_DEVICE_NETWORK') is not None:
+        pandore_config.DEVICE_NETWORK = os.environ.get('PANDORE_DEVICE_NETWORK')
+    if os.environ.get('PANDORE_CUSTOM_FILTER') is not None:
+        pandore_config.CUSTOM_FILTER = os.environ.get('PANDORE_CUSTOM_FILTER')
+    if os.environ.get('PANDORE_DB_HOST') is not None:
+        pandore_config.DB_HOST = os.environ.get('PANDORE_DB_HOST')
+    if os.environ.get('PANDORE_DB_PORT') is not None:
+        pandore_config.DB_PORT = os.environ.get('PANDORE_DB_PORT')
+    if os.environ.get('PANDORE_DB_USER') is not None:
+        pandore_config.DB_USER = os.environ.get('PANDORE_DB_USER')
+    if os.environ.get('PANDORE_DB_PASSWORD') is not None:
+        pandore_config.DB_PASSWORD = os.environ.get('PANDORE_DB_PASSWORD')
+    if os.environ.get('PANDORE_DB') is not None:
+        pandore_config.DB = os.environ.get('PANDORE_DB')
+    if os.environ.get('PANDORE_CAPTURE_NAME') is not None:
+        pandore_config.CAPTURE_NAME = os.environ.get('PANDORE_CAPTURE_NAME')
+    if os.environ.get('PANDORE_CAPTURE_DURATION') is not None:
+        pandore_config.CAPTURE_DURATION = os.environ.get('PANDORE_CAPTURE_DURATION')
+    if os.environ.get('PANDORE_CAPTURE_DESCRIPTION') is not None:
+        pandore_config.CAPTURE_DESCRIPTION = os.environ.get('PANDORE_CAPTURE_DESCRIPTION')
+    if os.environ.get('PANDORE_CAPTURE_CNX_TYPE') is not None:
+        pandore_config.CAPTURE_CNX_TYPE = os.environ.get('PANDORE_CAPTURE_CNX_TYPE')
+
+
 # MAIN=========================================================================
+
+update_variable_docker()
 print_project_info()
 print_agent_config()
 
+
 r = random.randint(0, 10000000000000)
 
-capture = PandoreSniffer(CAPTURE_NAME+str(r), CAPTURE_DURATION, CAPTURE_DESCRIPTION, CAPTURE_CNX_TYPE)
+capture = PandoreSniffer(pandore_config.CAPTURE_NAME + str(r), pandore_config.CAPTURE_DURATION, pandore_config.CAPTURE_DESCRIPTION, pandore_config.CAPTURE_CNX_TYPE)
+
 try:
     capture.run()
 except asyncio.exceptions.TimeoutError:
     capture.finish()
     print("\nEnd of the capture !")
 except Exception as e:
-    print("An error occurred ! \n"+e)
+    print("An error occurred ! \n" + e)

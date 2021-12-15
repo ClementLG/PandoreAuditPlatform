@@ -16,6 +16,8 @@ COPY ./app/pandore_* /app/
 WORKDIR /app
 RUN pip install --user -r requirements.txt
 
+# RUN
+
 CMD ["python3", "/app/pandore_agent.py"]
 
 # docker run --rm -it  --cap-add=NET_RAW --cap-add=NET_ADMIN --net=host pandorenetwork
