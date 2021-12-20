@@ -46,10 +46,18 @@ The -v /my/own/datadir:/var/lib/mysql part of the command mounts the /my/own/dat
 
 | VARIABLE| VALUE|
 | ------ | ------ |
-| MARIADB_ROOT_PASSWORD | Custom password for the DB
+| MARIADB_ROOT_PASSWORD | Custom password for the root user
+| MARIADB_ALLOW_EMPTY_ROOT_PASSWORD | Use 'yes' if you want to disable password (not recommanded)
+| MARIADB_RANDOM_ROOT_PASSWORD | Use 'yes' if you want to generate a random password. Printed in stdout. (not recommanded)
+| MARIADB_USER | Create a custom user (default with all acess)
+| MARIADB_PASSWORD | Password for the custom user
 
 
+Example :
 ```
 docker run -v /my/own/datadir:/var/lib/mysql -p 3306:3306/tcp --name pandoredb -e MARIADB_ROOT_PASSWORD="MyPassword" pandore-db
 ```
+
+note : reuse '-e' behind each option.
+
 ---------------------------------------
