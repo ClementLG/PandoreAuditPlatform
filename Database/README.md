@@ -42,12 +42,14 @@ The -v /my/own/datadir:/var/lib/mysql part of the command mounts the /my/own/dat
 - Database: Pandore
 - Port: 3306
 
-#### Environnement variable (-e option) -- (not develloped yet) :
+#### Environnement variable (-e option) :
 
 | VARIABLE| VALUE|
 | ------ | ------ |
-| XXX | XXX
-| XXX | XXX
-| XXX | XXX
+| MARIADB_ROOT_PASSWORD | Custom password for the DB
 
+
+```
+docker run -v /my/own/datadir:/var/lib/mysql -p 3306:3306/tcp --name pandoredb -e MARIADB_ROOT_PASSWORD="MyPassword" pandore-db
+```
 ---------------------------------------
