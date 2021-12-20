@@ -43,12 +43,12 @@ docker build --tag "pandore-sniffer:latest" .
 
 To run the container, use the following command :
 ```
-docker run --rm -it --cap-add=NET_RAW --cap-add=NET_ADMIN --net=host pandorenetwork
+docker run --rm -it --cap-add=NET_RAW --cap-add=NET_ADMIN --net=host pandore-sniffer
 
 ```
 You can send the config file from the directory to the container using the following command :
 ```
-docker run --rm -it  -v $(pwd)/pandore_config.py:/app/pandore_config.py --cap-add=NET_RAW --cap-add=NET_ADMIN --net=host pandorenetwork
+docker run --rm -it  -v $(pwd)/pandore_config.py:/app/pandore_config.py --cap-add=NET_RAW --cap-add=NET_ADMIN --net=host pandore-sniffer
 ```
 
 Environnement variable (-e option) can be used :
@@ -70,6 +70,9 @@ Environnement variable (-e option) can be used :
 Exemple to change the audited interface using the environment variables :
 
 ```
-docker run --rm -it --cap-add=NET_RAW --cap-add=NET_ADMIN --net=host -e PANDORE_AUDITED_INTERFACE="Ethernet 2" pandorenetwork
+docker run --rm -it --cap-add=NET_RAW --cap-add=NET_ADMIN --net=host -e PANDORE_AUDITED_INTERFACE="Ethernet X" pandore-sniffer
 ```
+
+note: if you have multiple options, you have to reuse '-e' behind each option.
+
 ---------------------------------------
