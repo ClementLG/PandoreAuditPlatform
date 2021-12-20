@@ -5,7 +5,7 @@
 The agent is the application which will make it possible to send the traffic in a formatted manner in a second application which will carry out more specific and cumbersome processing.
 
 ## B - Basic usage
-1) setup python :
+1) setup python (3.6 or earlier) :
 ```
 apt install python3.8
 apt install python3-pip
