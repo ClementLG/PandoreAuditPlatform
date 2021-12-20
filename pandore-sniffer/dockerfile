@@ -16,6 +16,12 @@ COPY ./app/pandore_* /app/
 WORKDIR /app
 RUN pip install --user -r requirements.txt
 
+#TimeZone
+
+ENV TZ=Europe/Paris 
+RUN apk add --no-cache tzdata
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 # RUN
 
 CMD ["python3", "/app/pandore_agent.py"]

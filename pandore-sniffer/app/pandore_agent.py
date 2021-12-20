@@ -17,6 +17,7 @@ import asyncio.exceptions
 import random
 import os
 import pandore_config
+import datetime
 
 from pandore_sniffer import PandoreSniffer
 
@@ -40,6 +41,10 @@ def print_agent_config():
     print('# ' + '=' * 50)
     print('Audited interface: ' + pandore_config.AUDITED_INTERFACE)
     print('Device network: ' + pandore_config.DEVICE_NETWORK)
+    start_time = datetime.datetime.now()
+    end_time = start_time + datetime.timedelta(seconds=pandore_config.CAPTURE_DURATION)
+    print("Start time: " + str(start_time.strftime("%d/%m/%Y - %H:%M:%S")))
+    print("Expected end time: " + str(end_time.strftime("%d/%m/%Y - %H:%M:%S")))
     print('# ' + '=' * 50)
 
 

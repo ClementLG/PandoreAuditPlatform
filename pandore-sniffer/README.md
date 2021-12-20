@@ -66,6 +66,7 @@ Environnement variable (-e option) can be used :
 | PANDORE_CAPTURE_DURATION| A custom duration for your capture in seconds
 | PANDORE_CAPTURE_DESCRIPTION| A custom description for your capture
 | PANDORE_CAPTURE_CNX_TYPE| A tag to mention the connexion type
+| TZ| To use a custom time zone. Default is 'Europe/Paris'
 
 Exemple to change the audited interface using the environment variables :
 
