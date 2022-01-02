@@ -12,5 +12,5 @@ NUTRISCORE_REFERENCE_DIVERSITY = 50     # number of distincts servers
 NUTRISCORE_WEIGHT_FREQUENCY = 1/3
 NUTRISCORE_WEIGHT_DEBIT = 1/3
 NUTRISCORE_WEIGHT_DIVERSITY = 1/3
-SIGMOIDE_SLOPE = 0.1                    # slope of the sigmoide
+SIGMOIDE_SLOPE = 1                      # slope of the sigmoide
 

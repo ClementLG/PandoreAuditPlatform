@@ -74,17 +74,11 @@
                             <div class="col-sm-3 px-5">
                                 <h6 class="">Score</h6>
                                 <hr />
-                                {% if score == "A" %}
-                                <span class="badge" style="background-color: #009600;"><p class="h1 text-white">A</p></span>
-                                {% elif score == "B" %}
-                                <span class="badge" style="background-color: #5d7d00;"><p class="h1 text-white">B</p></span>
-                                {% elif score == "C" %}
-                                <span class="badge" style="background-color: #7e6000;"><p class="h1 text-white">C</p></span>
-                                {% elif score == "D" %}
-                                <span class="badge" style="background-color: #913d00;"><p class="h1 text-white">D</p></span>
-                                {% elif score == "E" %}
-                                <span class="badge" style="background-color: #960000;"><p class="h1 text-white">E</p></span>
-                                {% endif %}
+                                <span class="badge" style="background-color: rgba(0, 150, 0, {{ 1 if score == "A" else 0.2}});"><p class="h{{ "1" if score == "A" else "3"}} text-white">A</p></span>
+                                <span class="badge" style="background-color: rgba(103, 141, 0, {{ 1 if score == "B" else 0.2}});"><p class="h{{ "1" if score == "B" else "3"}} text-white">B</p></span>
+                                <span class="badge" style="background-color: rgba(161, 123, 0, {{ 1 if score == "C" else 0.2}});"><p class="h{{ "1" if score == "C" else "3"}} text-white">C</p></span>
+                                <span class="badge" style="background-color: rgba(212, 92, 0, {{ 1 if score == "D" else 0.2}});"><p class="h{{ "1" if score == "D" else "3"}} text-white">D</p></span>
+                                <span class="badge" style="background-color: rgba(255, 0, 0, {{ 1 if score == "E" else 0.2}});"><p class="h{{ "1" if score == "E" else "3"}} text-white">E</p></span>
                             </div>
                         </div>
                         <div class="row mt-5 px-5">
