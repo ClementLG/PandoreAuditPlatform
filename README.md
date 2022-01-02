@@ -1,7 +1,7 @@
 
 # Pandore
 
-<img src="./docs/pandore_icon.png" width="60">
+<img src="./docs/design/pandore_icon.png" width="60">
 
 ## _An IMT ATLANTIQUE project_
 
