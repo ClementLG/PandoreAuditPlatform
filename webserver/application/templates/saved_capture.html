@@ -54,22 +54,37 @@
                             </span>
                         </div>
                         <div class="row mt-5 px-5">
-                            <div class="col-sm-4 px-5 mb-5">
+                            <div class="col-sm-3 px-5 mb-5">
                                 <h6 class="">Name</h6>
                                 <hr />
                                 <h5 class="mt-2 text-imt-blue">{{capture.Name}}</h5>
                             </div>
-                            <div class="col-sm-4 px-5 mb-5">
+                            <div class="col-sm-3 px-5 mb-5">
                                 <h6 class="">Start date time</h6>
                                 <hr />
                                 <h5 class="mt-2 text-imt-green">{{capture.StartTime.strftime('%d/%m/%Y %H:%M:%S')}}</h5>
                                 <p>(dd/MM/yyyy HH:mm:ss)</p>
                             </div>
-                            <div class="col-sm-4 px-5">
+                            <div class="col-sm-3 px-5">
                                 <h6 class="">Duration</h6>
                                 <hr />
                                 <h5 class="mt-2 text-imt-blue">{{duration}}</h5>
                                 <p>(hh:mm:ss)</p>
+                            </div>
+                            <div class="col-sm-3 px-5">
+                                <h6 class="">Score</h6>
+                                <hr />
+                                {% if score == "A" %}
+                                <span class="badge" style="background-color: #009600;"><p class="h1 text-white">A</p></span>
+                                {% elif score == "B" %}
+                                <span class="badge" style="background-color: #5d7d00;"><p class="h1 text-white">B</p></span>
+                                {% elif score == "C" %}
+                                <span class="badge" style="background-color: #7e6000;"><p class="h1 text-white">C</p></span>
+                                {% elif score == "D" %}
+                                <span class="badge" style="background-color: #913d00;"><p class="h1 text-white">D</p></span>
+                                {% elif score == "E" %}
+                                <span class="badge" style="background-color: #960000;"><p class="h1 text-white">E</p></span>
+                                {% endif %}
                             </div>
                         </div>
                         <div class="row mt-5 px-5">

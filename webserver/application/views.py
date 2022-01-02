@@ -1,10 +1,11 @@
 from dns.name import Name
 from flask import Flask, request, redirect, url_for, render_template, json
 from datetime import datetime
-from application import app, pandoreDB, pandoreException
+from application import app, configuration, pandoreDB, pandoreException
 from application.analytics.pandore_analytics import PandoreAnalytics
 from application.models import *
 import threading, multiprocessing
+import math
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -327,6 +328,40 @@ def saved_capture(id):
                 if i not in requests_history:
                     requests_history[i] = 0
 
+        # NUTRISCORE
+        if len(captureRequests) > 0 :
+            timesBetweenRequests = [];
+
+            for i in range(len(captureRequests)-1) :
+                timesBetweenRequests.append((captureRequests[i+1].DateTime - captureRequests[i].DateTime).total_seconds());
+
+            nutriscoreFrequency =  1/(sum(timesBetweenRequests)/len(timesBetweenRequests))
+            nutriscoreDebit = sum(req.PacketSize for req in captureRequests)/(capture.EndTime - capture.StartTime).total_seconds()
+            nutriscoreDiversity = len({request.ServerValue for request in captureRequests})
+
+            nutriscoreSigmoideFrequency = calculateSigmoide(configuration.SIGMOIDE_SLOPE, configuration.NUTRISCORE_REFERENCE_FREQUENCY, nutriscoreFrequency)
+            nutriscoreSigmoideDebit = calculateSigmoide(configuration.SIGMOIDE_SLOPE, configuration.NUTRISCORE_REFERENCE_DEBIT, nutriscoreDebit/(1024*1024))
+            nutriscoreSigmoideDiversity = calculateSigmoide(configuration.SIGMOIDE_SLOPE, configuration.NUTRISCORE_REFERENCE_DIVERSITY, nutriscoreDiversity)
+
+            score = (configuration.NUTRISCORE_WEIGHT_FREQUENCY*nutriscoreSigmoideFrequency + 
+                     configuration.NUTRISCORE_WEIGHT_DEBIT*nutriscoreSigmoideDebit + 
+                     configuration.NUTRISCORE_WEIGHT_DIVERSITY*nutriscoreSigmoideDiversity)/(configuration.NUTRISCORE_WEIGHT_FREQUENCY+
+                                                                                             configuration.NUTRISCORE_WEIGHT_DEBIT+
+                                                                                             configuration.NUTRISCORE_WEIGHT_DIVERSITY)
+
+            if (score >= 0 and score < 0.2):
+                score = "A"
+            elif (score >= 0.2 and score < 0.4):
+                score = "B"
+            elif (score >= 0.4 and score < 0.6):
+                score = "C"
+            elif (score >= 0.6 and score < 0.8):
+                score = "D"
+            elif (score >= 0.8):
+                score = "E"
+        else :
+            score = "-"
+
         return render_template(
                 "saved_capture.html",
                 capture = capture,
@@ -339,7 +374,8 @@ def saved_capture(id):
                 ratio = up_down_ratio,
                 stats = statistics,
                 requests_history = dict(sorted(requests_history.items())),
-                request_history_unit = request_history_unit
+                request_history_unit = request_history_unit,
+                score = score
             )
     except Exception as e:
         try:
@@ -428,3 +464,8 @@ def threadFunction(servers: list[PandoreServer], db:pandoreDB.PandoreDB):
             if found_service:
                 server.Service = found_service
                 db.update_server(server)
+
+def calculateSigmoide(slope: float, reference: float, value: float):
+    if reference > 500:
+        reference = 500
+    return (1-math.exp(-slope*value))/(1+(math.exp(slope*reference)-2)*math.exp(-slope*value))
