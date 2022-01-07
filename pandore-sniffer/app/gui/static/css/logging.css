@@ -1,4 +1,4 @@
-.logging_window{
+.logging_window {
     display: block;
     padding: 9.5px;
     font-size: 13px;
@@ -9,6 +9,33 @@
     background-color: #f5f5f5;
     border: 1px solid #ccc;
     border-radius: 4px;
-    width: 50%;
+    width: 75%;
     margin: auto;
+    height: 500px;
+    overflow: auto;
+}
+
+.table {
+    font-family: Arial, Helvetica, sans-serif;
+    border-collapse: collapse;
+    width: 75%;
+    margin: auto;
+}
+
+.table td, .table th {
+    border: 1px solid black;
+    padding: 8px;
+}
+
+.table tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+
+.table th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: left;
+    background-color: #83DC5A;
+    color: white;
 }
