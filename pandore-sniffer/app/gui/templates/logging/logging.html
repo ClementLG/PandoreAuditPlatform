@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="/static/img/pandore_icon.ico"/>
+    <link rel="stylesheet" type=text/css href="/static/css/logging.css">
+    <title>Sniffer live console</title>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            var output = document.getElementById('output');
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', 'log_stream', true);
+            xhr.send();
+            setInterval(function () {
+                output.textContent = xhr.responseText;
+            }, 500);
+        });
+    </script>
+</head>
+<body id="main">
+<div class="row">
+    <h2 align="center">Logging will appear here:</h2>
+    <div class="logging_window">
+        <pre id="output"></pre>
+    </div>
+</div>
+</body>
+</html>
