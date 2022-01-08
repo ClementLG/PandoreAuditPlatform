@@ -49,36 +49,100 @@
             {% endif %}
             <div class="row">
                 <div class="col-sm-6">
-                    <div class="card shadow mb-3">
-                        <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
-                            <div class="row mb-5">
-                                <div class="col-sm">
-                                    <span class="" style="font-size: 30px;">
-                                        Services list
-                                    </span>
-                                </div>
-                                <div class="col-md-auto">
-                                    <button class="btn btn-imt-green" data-bs-toggle="modal" data-bs-target="#modalAddService">
-                                        <span class="bi bi-plus"></span> Add new service
-                                    </button>
+                    <div class="row">
+                        <div class="col">
+                            <div class="card shadow mb-3">
+                                <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
+                                    <div class="row mb-5">
+                                        <span class="" style="font-size: 30px;">
+                                            Application configuration
+                                        </span>
+                                    </div>
+                                    <form method="post">
+                                        <input type="hidden" name="actionType" id="actionType" value="editApplicationConfiguration">
+                                        <div class="mb-3">
+                                            <label for="analytics_timeout" class="form-label">Server automatic classification timeout</label>
+                                            <input type="number" class="form-control" id="analytics_timeout" name="analytics_timeout" aria-describedby="analytics_timeout_help" min="1" step="1" value="{{config.ANALYTICS_TIMEOUT}}">
+                                            <div id="analytics_timeout_help" class="form-text">Maximum time in seconds to spend trying to find server associated service</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="nutriscore_reference_frequency" class="form-label">Nutriscore reference value for frequency indicator</label>
+                                            <input type="number" class="form-control" id="nutriscore_reference_frequency" name="nutriscore_reference_frequency" aria-describedby="nutriscore_reference_frequency_help" min="1" step="1" value="{{config.NUTRISCORE_REFERENCE_FREQUENCY}}">
+                                            <div id="nutriscore_reference_frequency_help" class="form-text">Reference mean time in seconds between two UE connections</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="nutriscore_reference_debit" class="form-label">Nutriscore reference value for debit indicator</label>
+                                            <input type="number" class="form-control" id="nutriscore_reference_debit" name="nutriscore_reference_debit" aria-describedby="nutriscore_reference_debit_help" min="0.001" step="0.001" value="{{config.NUTRISCORE_REFERENCE_DEBIT}}">
+                                            <div id="nutriscore_reference_debit_help" class="form-text">Reference debit in MB/s (download + upload)</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="nutriscore_reference_diversity" class="form-label">Nutriscore reference value for diversity indicator</label>
+                                            <input type="number" class="form-control" id="nutriscore_reference_diversity" name="nutriscore_reference_diversity" aria-describedby="nutriscore_reference_diversity_help" min="1" step="1" value="{{config.NUTRISCORE_REFERENCE_DIVERSITY}}">
+                                            <div id="nutriscore_reference_diversity_help" class="form-text">Reference number of distincts servers</div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="nutriscore_weight_frequency" class="form-label">Nutriscore frequency indicator coefficient for global score</label>
+                                            <input type="number" class="form-control" id="nutriscore_weight_frequency" name="nutriscore_weight_frequency" min="1" step="1" value="{{config.NUTRISCORE_WEIGHT_FREQUENCY}}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="nutriscore_weight_debit" class="form-label">Nutriscore debit indicator coefficient for global score</label>
+                                            <input type="number" class="form-control" id="nutriscore_weight_debit" name="nutriscore_weight_debit" min="1" step="1" value="{{config.NUTRISCORE_WEIGHT_DEBIT}}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="nutriscore_weight_diversity" class="form-label">Nutriscore diversity indicator coefficient for global score</label>
+                                            <input type="number" class="form-control" id="nutriscore_weight_diversity" name="nutriscore_weight_diversity" min="1" step="1" value="{{config.NUTRISCORE_WEIGHT_DIVERSITY}}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="nutriscore_sigmoide_slope" class="form-label">Nutriscore sigmoide slope</label>
+                                            <input type="number" class="form-control" id="nutriscore_sigmoide_slope" name="nutriscore_sigmoide_slope" min="0.01" max="1" step="0.01" value="{{config.NUTRISCORE_SIGMOIDE_SLOPE}}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="nutriscore_average_type" class="form-label">Nutriscore global score average type</label>
+                                            <select class="form-select" id="nutriscore_average_type" name="nutriscore_average_type">
+                                                <option value="0" {{"selected" if config.NUTRISCORE_AVERAGE_TYPE != 1}}>Arithmetic</option>
+                                                <option value="1" {{"selected" if config.NUTRISCORE_AVERAGE_TYPE == 1}}>Harmonic</option>
+                                            </select>
+                                        </div>
+                                        <div class="text-end">
+                                            <button type="submit" class="btn btn-imt-green">Save</button>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
-                            <table id="services" class="table table-hover" style="width:100%">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th width="1px"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for service in allServices %}
-                                    <tr onmouseover="" style="cursor: pointer;" onclick="window.location.href='service/{{service.ID}}'">
-                                        <td>{{service.Name}}</td>
-                                        <td><span class="bi bi-arrow-right-square-fill"></span></td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                        </div>
+                        <div class="col-sm">
+                            <div class="card shadow mb-3">
+                                <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
+                                    <div class="row mb-5">
+                                        <div class="col-sm">
+                                            <span class="" style="font-size: 30px;">
+                                                Services list
+                                            </span>
+                                        </div>
+                                        <div class="col-md-auto">
+                                            <button class="btn btn-imt-green" data-bs-toggle="modal" data-bs-target="#modalAddService">
+                                                <span class="bi bi-plus"></span> Add new service
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <table id="services" class="table table-hover" style="width:100%">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th width="1px"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for service in allServices %}
+                                            <tr onmouseover="" style="cursor: pointer;" onclick="window.location.href='service/{{service.ID}}'">
+                                                <td>{{service.Name}}</td>
+                                                <td><span class="bi bi-arrow-right-square-fill"></span></td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -101,25 +165,26 @@
                                     </form>
                                 </div>
                             </div>
-
-                            <table class="table table-hover" style="width:100%">
-                                <thead>
-                                    <tr>
-                                        <th>Value</th>
-                                        <th>DNS</th>
-                                        <th width="1px"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for server in unknownServers %}
-                                    <tr onmouseover="" style="cursor: pointer;" onclick="assignServer('{{server.Address}}', {{ server.ID }}, {{ server.Service.ID or 0 }}, {{ server.DNS.ID or 0 }})">
-                                        <td>{{server.Address}}</td>
-                                        <td>{% if server.DNS %}{{ server.DNS.Value }}{% else %}<div class="text-danger">-</div>{% endif %}</td>
-                                        <td><span class="bi bi-gear-fill"></span></td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                            <div class="table-responsive">
+                                <table id="incompleteServers" class="table table-hover" style="width:100%">
+                                    <thead>
+                                        <tr>
+                                            <th>Value</th>
+                                            <th>DNS</th>
+                                            <th width="1px"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for server in unknownServers %}
+                                        <tr onmouseover="" style="cursor: pointer;" onclick="assignServer('{{server.Address}}', {{ server.ID }}, {{ server.Service.ID or 0 }}, {{ server.DNS.ID or 0 }})">
+                                            <td>{{server.Address}}</td>
+                                            <td>{% if server.DNS %}{{ server.DNS.Value }}{% else %}<div class="text-danger">-</div>{% endif %}</td>
+                                            <td><span class="bi bi-gear-fill"></span></td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -226,16 +291,20 @@
             </div>
         </div>
     </div>
-
 </body>
 </html>
 
 <script>
-    $('select').selectpicker();
+    $('#assignServerService').selectpicker();
+    $('#assignServerDNS').selectpicker();
 
     $(document).ready(function() {
         $('#services').DataTable();
-    } );
+    });
+
+    $(document).ready(function () {
+        $('#incompleteServers').DataTable();
+    });
 
     function assignServer(server, ID, service, dns){
         document.getElementById('assignServerValue').innerHTML = '<strong>Value :</strong> ' + server;
@@ -263,5 +332,4 @@
     function automaticClassification() {
         $("#modalAutoClassification").modal('show')
     }
-
 </script>

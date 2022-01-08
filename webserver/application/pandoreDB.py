@@ -20,16 +20,28 @@ class PandoreDB:
     def close_db(self):
         self.conn.close()
 
+    # Configuration
+    def get_configuration(self) -> PandoreConfiguration:
+        self.cursor.callproc('ReadConfiguration')
+        for result in self.cursor.stored_results():
+            for res in result.fetchall():
+                return PandoreConfiguration(int(res[0]), int(res[1]), float(res[2]), int(res[3]), int(res[4]), int(res[5]), int(res[6]), float(res[7]), int(res[8]))
+        return None
+
+    def update_configuration(self, config: PandoreConfiguration) -> None:
+        self.cursor.callproc('UpdateConfiguration', [config.ANALYTICS_TIMEOUT, config.NUTRISCORE_REFERENCE_FREQUENCY, config.NUTRISCORE_REFERENCE_DEBIT, config.NUTRISCORE_REFERENCE_DIVERSITY, config.NUTRISCORE_WEIGHT_FREQUENCY, config.NUTRISCORE_WEIGHT_DEBIT, config.NUTRISCORE_WEIGHT_DIVERSITY, config.NUTRISCORE_SIGMOIDE_SLOPE, config.NUTRISCORE_AVERAGE_TYPE])
+        self.conn.commit()
+
     # Capture
     def get_running_capture(self) -> Optional[PandoreCapture]:
         self.cursor.callproc('ReadRunningCapture')
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                return PandoreCapture(int(res[0]), str(res[1]), res[2], res[3] or None, str(res[4]), str(res[5]), str(res[6]))
+                return PandoreCapture(int(res[0]), str(res[1]), res[2], res[3] or None, str(res[4]), str(res[5]), str(res[6]), int(res[7]))
         return None
 
     def update_capture(self, capture: PandoreCapture) -> None:
-        self.cursor.callproc('UpdateCapture', [capture.ID, capture.Name, capture.StartTime, capture.EndTime, capture.Description, capture.Interface, capture.ConnectionType])
+        self.cursor.callproc('UpdateCapture', [capture.ID, capture.Name, capture.StartTime, capture.EndTime, capture.Description, capture.Interface, capture.ConnectionType, capture.InactivityTimeout])
         self.conn.commit()
 
     def find_saved_captures(self) -> list[PandoreCapture]:
@@ -37,7 +49,7 @@ class PandoreDB:
         self.cursor.callproc('ReadSavedCaptures')
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                captures.append(PandoreCapture(int(res[0]), str(res[1]), res[2], res[3] or None, str(res[4]), str(res[5]), str(res[6])))
+                captures.append(PandoreCapture(int(res[0]), str(res[1]), res[2], res[3] or None, str(res[4]), str(res[5]), str(res[6]), int(res[7])))
         return captures
 
     def find_capture_by_id(self, id: int) -> PandoreCapture:
@@ -46,7 +58,7 @@ class PandoreDB:
         self.cursor.callproc('ReadCaptureByID', [int(id)])
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                return PandoreCapture(int(res[0]), str(res[1]), res[2], res[3] or None, str(res[4]), str(res[5]), str(res[6]))
+                return PandoreCapture(int(res[0]), str(res[1]), res[2], res[3] or None, str(res[4]), str(res[5]), str(res[6]), int(res[7]))
         return res[0]
 
     def get_capture_service_stat(self, id: int):
@@ -67,7 +79,7 @@ class PandoreDB:
         self.cursor.callproc('ReadRequestsByCaptureID', [int(id), 0])
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                requests.append(PandoreCaptureRequest(int(res[0]), int(res[1]), bool(res[2]), res[3], str(res[4]), self.find_server_by_id(int(res[5])), self.find_capture_by_id(int(res[6]))))
+                    requests.append(PandoreCaptureRequest(int(res[0]), int(res[1]), bool(res[2]), res[3], str(res[4]), self.find_server_by_id(int(res[5])), self.find_capture_by_id(int(res[6]))))
         return requests
 
     def find_all_capture_request_not_detailed(self, id: int) -> list[PandoreCaptureRequestNotDetailed]:
@@ -203,7 +215,7 @@ class PandoreDB:
         self.cursor.callproc('ReadAllServices')
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                services.append(PandoreService(int(res[0]), str(res[1])))
+                services.append(PandoreService(int(res[0]), str(res[1]), int(res[2])))
         return services
 
     def find_service_by_id(self, id: int) -> Optional[PandoreService]:
@@ -212,7 +224,7 @@ class PandoreDB:
         self.cursor.callproc('ReadServiceByID', [int(id)])
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                return PandoreService(int(res[0]), str(res[1]))
+                return PandoreService(int(res[0]), str(res[1]), int(res[2]))
         return None
 
     def find_service_by_name(self, name: str) -> Optional[PandoreService]:
@@ -221,7 +233,7 @@ class PandoreDB:
         self.cursor.callproc('ReadServiceByName', [name])
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                return PandoreService(int(res[0]), str(res[1]))
+                return PandoreService(int(res[0]), str(res[1]), int(res[2]))
         return None
 
     def find_service_all_servers(self, id: int, details: bool) -> list[PandoreServer]:
@@ -235,12 +247,66 @@ class PandoreDB:
 
     def create_service(self, service: PandoreService) -> None:
         if not service:
-            raise pandoreException.PandoreException("Service is missing");
+            raise pandoreException.PandoreException("Service is missing")
         elif not service.Name or len(service.Name) < 1:
-            raise pandoreException.PandoreException("Service name minimum size is 1");
+            raise pandoreException.PandoreException("Service name minimum size is 1")
         elif len(service.Name) > 255:
-            raise pandoreException.PandoreException("Service name can't exceed 255 characters");
+            raise pandoreException.PandoreException("Service name can't exceed 255 characters")
         elif self.find_service_by_name(service.Name):
-            raise pandoreException.PandoreException("This service name is already used");
+            raise pandoreException.PandoreException("This service name is already used")
         self.cursor.callproc('CreateService', [str(service.Name)])
         self.conn.commit()
+
+    def delete_service(self, service: PandoreService) -> None:
+        if not service:
+            raise pandoreException.PandoreException("Service is missing")
+        else:
+            self.cursor.callproc('DeleteServiceByID', [int(service.ID)])
+            self.conn.commit()
+
+    def update_service(self, service: PandoreService) -> None:
+        if not service:
+            raise pandoreException.PandoreException("Service is missing")
+        elif not service.Name or len(service.Name) < 1:
+            raise pandoreException.PandoreException("Service name minimum size is 1")
+        elif len(service.Name) > 255:
+            raise pandoreException.PandoreException("Service name can't exceed 255 characters")
+        else:
+            checkService = self.find_service_by_name(service.Name)
+            if checkService and checkService.ID != service.ID:
+                raise pandoreException.PandoreException("This service name is already used")
+            else:
+                self.cursor.callproc('UpdateService', [service.ID, service.Name, service.Priority])
+                self.conn.commit()
+
+    # ServiceKeyword
+    def find_all_keyword_by_service(self, id: int) -> list[PandoreServiceKeyword]:
+        keywords = []
+        if not id:
+            raise pandoreException.PandoreException("Service is missing")
+        else:
+            service = self.find_service_by_id(id)
+            if not service:
+                raise pandoreException.PandoreException("Invalid service");
+            else:
+                self.cursor.callproc('ReadServiceKeywordByService', [service.ID])
+                for result in self.cursor.stored_results():
+                    for res in result.fetchall():
+                        keywords.append(PandoreServiceKeyword(int(res[0]), str(res[1]), service))
+        return keywords
+
+    def create_service_keyword(self, keyword: PandoreServiceKeyword) -> None:
+        if not PandoreServiceKeyword:
+            raise pandoreException.PandoreException("Keyword is missing")
+        elif len(keyword.Value) > 255:
+            raise pandoreException.PandoreException("Keyword value can't exceed 255 characters")
+        else:
+            self.cursor.callproc('CreateServiceKeyword', [str(keyword.Value), keyword.Service.ID])
+            self.conn.commit()
+
+    def delete_keyword(self, keyword: PandoreServiceKeyword) -> None:
+        if not PandoreServiceKeyword:
+            raise pandoreException.PandoreException("Keyword is missing")
+        else:
+            self.cursor.callproc('DeleteServiceKeywordByID', [keyword.ID])
+            self.conn.commit()

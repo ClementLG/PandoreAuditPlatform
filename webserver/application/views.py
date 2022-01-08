@@ -1,10 +1,8 @@
-from dns.name import Name
 from flask import Flask, request, redirect, url_for, render_template, json
 from datetime import datetime
-from application import app, configuration, pandoreDB, pandoreException
+from application import app, pandoreDB, pandoreException, configuration
 from application.analytics.pandore_analytics import PandoreAnalytics
 from application.models import *
-import threading, multiprocessing
 import math
 
 @app.errorhandler(404)
@@ -187,20 +185,48 @@ def service(id):
         db = pandoreDB.PandoreDB()
         serviceInfo = db.find_service_by_id(id)
         serversInfo = db.find_service_all_servers(id, True)
+        keywordList = db.find_all_keyword_by_service(id)
+        serviceList = db.find_all_services()
+        serviceList.sort(key=lambda x: x.Priority)
+
         if(request.method == 'POST'):
-                if(request.form['actionType'] == 'addServer'):
-                    if(len(request.values) < 3 or len(request.values) > 4): raise pandoreException.PandoreException("Invalid number of arguments");
-                    db.create_server_dns(db.find_service_by_id(int(request.form['addServerService'])), request.form['addServerValue'], request.form['addServerDNS'] or None)
-                    serversInfo = db.find_service_all_servers(id, True)
-                elif(request.form['actionType'] == 'removeServer'):
-                    if(len(request.values) != 2): raise pandoreException.PandoreException("Invalid number of arguments");
-                    db.remove_service_from_server(int(request.form['removeServerID']))
-                    serversInfo = db.find_service_all_servers(id, True)
+            if(id == db.find_service_by_name("Intranet service").ID):
+                raise pandoreException.PandoreException("You can't edit or delete this service")
+
+            if(request.form['actionType'] == 'addServer'):
+                if(len(request.values) < 2 or len(request.values) > 3): raise pandoreException.PandoreException("Invalid number of arguments");
+                db.create_server_dns(db.find_service_by_id(id), request.form['addServerValue'], request.form['addServerDNS'] or None)
+                serversInfo = db.find_service_all_servers(id, True)
+            elif(request.form['actionType'] == 'removeServer'):
+                if(len(request.values) != 2): raise pandoreException.PandoreException("Invalid number of arguments");
+                db.remove_service_from_server(int(request.form['removeServerID']))
+                serversInfo = db.find_service_all_servers(id, True)
+            elif(request.form['actionType'] == 'addKeyword'):
+                if(len(request.values) != 2): raise pandoreException.PandoreException("Invalid number of arguments");
+                db.create_service_keyword(PandoreServiceKeyword(0, str(request.form['addKeywordValue']), db.find_service_by_id(id)))
+                keywordList = db.find_all_keyword_by_service(id)
+            elif(request.form['actionType'] == 'removeKeyword'):
+                if(len(request.values) != 2): raise pandoreException.PandoreException("Invalid number of arguments");
+                db.delete_keyword(PandoreServiceKeyword(int(request.form['removeKeywordID']), "", db.find_service_by_id(id)))
+                keywordList = db.find_all_keyword_by_service(id)
+            elif(request.form['actionType'] == 'removeService'):
+                db.delete_service(db.find_service_by_id(id))
+                return redirect(url_for('configuration'))
+            elif(request.form['actionType'] == 'editService'):
+                if(len(request.values) != 3): raise pandoreException.PandoreException("Invalid number of arguments");
+                newService = PandoreService(int(id), str(request.form['editServiceName']), int(request.form['editServicePriority']))
+                db.update_service(newService)
+                serviceList = db.find_all_services()
+                serviceList.sort(key=lambda x: x.Priority)
+                serviceInfo = newService
         db.close_db()
+
         return render_template(
             "service.html",
             service=serviceInfo,
-            servers=serversInfo
+            servers=serversInfo,
+            keywords=keywordList,
+            services=serviceList
             )
     except pandoreException.PandoreException as e:
         if db :
@@ -209,6 +235,8 @@ def service(id):
             "service.html",
             service=serviceInfo,
             servers=serversInfo,
+            keywords = keywordList,
+            services = serviceList,
             error=e
             )
     except Exception as e:
@@ -233,6 +261,7 @@ def saved_capture(id):
         captureRequests = db.find_all_capture_request_not_detailed(id)
         statistics = db.get_capture_service_stat(id)
         total_trafic = db.get_capture_total_trafic(id)
+        config = db.get_configuration()
         db.close_db()
 
         if not capture:
@@ -330,24 +359,29 @@ def saved_capture(id):
 
         # NUTRISCORE
         if len(captureRequests) > 0 :
-            timesBetweenRequests = [];
+            timeBetweenConnections = []
 
-            for i in range(len(captureRequests)-1) :
-                timesBetweenRequests.append((captureRequests[i+1].DateTime - captureRequests[i].DateTime).total_seconds());
+            for i in range(len(captureRequests)-1):
+                if ((captureRequests[i+1].DateTime - captureRequests[i].DateTime).total_seconds() >= capture.InactivityTimeout):
+                    timeBetweenConnections.append((captureRequests[i+1].DateTime - captureRequests[i].DateTime).total_seconds())
 
-            nutriscoreFrequency =  1/(sum(timesBetweenRequests)/len(timesBetweenRequests))
+            if len(timeBetweenConnections) > 0:
+                nutriscoreFrequency =  1/(sum(timeBetweenConnections)/len(timeBetweenConnections))
+            else:
+                nutriscoreFrequency = 1   
             nutriscoreDebit = sum(req.PacketSize for req in captureRequests)/(capture.EndTime - capture.StartTime).total_seconds()
             nutriscoreDiversity = len({request.ServerValue for request in captureRequests})
 
-            nutriscoreSigmoideFrequency = calculateSigmoide(configuration.SIGMOIDE_SLOPE, configuration.NUTRISCORE_REFERENCE_FREQUENCY, nutriscoreFrequency)
-            nutriscoreSigmoideDebit = calculateSigmoide(configuration.SIGMOIDE_SLOPE, configuration.NUTRISCORE_REFERENCE_DEBIT, nutriscoreDebit/(1024*1024))
-            nutriscoreSigmoideDiversity = calculateSigmoide(configuration.SIGMOIDE_SLOPE, configuration.NUTRISCORE_REFERENCE_DIVERSITY, nutriscoreDiversity)
+            nutriscoreSigmoideFrequency = calculateSigmoide(config.NUTRISCORE_SIGMOIDE_SLOPE, (1/config.NUTRISCORE_REFERENCE_FREQUENCY), nutriscoreFrequency)
+            nutriscoreSigmoideDebit = calculateSigmoide(config.NUTRISCORE_SIGMOIDE_SLOPE, config.NUTRISCORE_REFERENCE_DEBIT, nutriscoreDebit/(1024*1024))
+            nutriscoreSigmoideDiversity = calculateSigmoide(config.NUTRISCORE_SIGMOIDE_SLOPE, config.NUTRISCORE_REFERENCE_DIVERSITY, nutriscoreDiversity)
 
-            score = (configuration.NUTRISCORE_WEIGHT_FREQUENCY*nutriscoreSigmoideFrequency + 
-                     configuration.NUTRISCORE_WEIGHT_DEBIT*nutriscoreSigmoideDebit + 
-                     configuration.NUTRISCORE_WEIGHT_DIVERSITY*nutriscoreSigmoideDiversity)/(configuration.NUTRISCORE_WEIGHT_FREQUENCY+
-                                                                                             configuration.NUTRISCORE_WEIGHT_DEBIT+
-                                                                                             configuration.NUTRISCORE_WEIGHT_DIVERSITY)
+            if(config.NUTRISCORE_AVERAGE_TYPE == 1):
+                # Harmonic mean
+                score = 1 - ((config.NUTRISCORE_WEIGHT_FREQUENCY+config.NUTRISCORE_WEIGHT_DEBIT+config.NUTRISCORE_WEIGHT_DIVERSITY)/((config.NUTRISCORE_WEIGHT_FREQUENCY/(1-nutriscoreSigmoideFrequency))+(config.NUTRISCORE_WEIGHT_DEBIT/(1-nutriscoreSigmoideDebit))+(config.NUTRISCORE_WEIGHT_DIVERSITY/(1-nutriscoreSigmoideDiversity))))
+            else:
+                # Arithmetic mean
+                score = (config.NUTRISCORE_WEIGHT_FREQUENCY*nutriscoreSigmoideFrequency+config.NUTRISCORE_WEIGHT_DEBIT*nutriscoreSigmoideDebit+config.NUTRISCORE_WEIGHT_DIVERSITY*nutriscoreSigmoideDiversity)/(config.NUTRISCORE_WEIGHT_FREQUENCY+config.NUTRISCORE_WEIGHT_DEBIT+config.NUTRISCORE_WEIGHT_DIVERSITY)
 
             if (score >= 0 and score < 0.2):
                 score = "A"
@@ -389,33 +423,40 @@ def saved_capture(id):
         )
 
 @app.route('/configuration', methods = ['POST', 'GET'])
-def services():
+def configurations():
     try:
         db = pandoreDB.PandoreDB()
-
         servers = db.find_incomplete_servers()
         services = db.find_all_services()
         dns = db.find_all_dns()
+        config = db.get_configuration()
 
         if(request.method == 'POST'):
             if(request.form['actionType'] == 'addService'):
-                if(len(request.values) != 2): raise pandoreException.PandoreException("Invalid number of arguments");
+                if(len(request.values) != 2): raise pandoreException.PandoreException("Invalid number of arguments")
                 db.create_service(PandoreService(None, request.form['addServiceName']))
                 services = db.find_all_services()
             elif(request.form['actionType'] == 'assignServerServiceDNS'):
-                if(len(request.values) != 5): raise pandoreException.PandoreException("Invalid number of arguments");
+                if(len(request.values) != 5): raise pandoreException.PandoreException("Invalid number of arguments")
                 db.update_server(PandoreServer(int(request.form['assignServerID']), request.form['assignServerAddress'], db.find_dns_by_id(int(request.form['assignServerDNS'])), db.find_service_by_id(int(request.form['assignServerService']))))
                 servers = db.find_incomplete_servers()
             elif(request.form['actionType'] == 'autoServerClassification'):
-                arrays = split_array(servers, round(len(servers)/multiprocessing.cpu_count()))
-                threads = []
-                for array in arrays:
-                    worker_thread = threading.Thread(target=threadFunction, args=(array,db,))
-                    threads.append(worker_thread)
-                    worker_thread.start()
-                for thread in threads:
-                    thread.join()
+                serviceKeywords = []
+
+                for service in services:
+                    serviceKeywords.append(PandoreAnalyticsServiceKeywords(service, db.find_all_keyword_by_service(service.ID)))
+
+                analytics = PandoreAnalytics(serviceKeywords)
+                for server in servers:
+                    service = analytics.analyse_ip_dns(config.ANALYTICS_TIMEOUT, server.Address, None if server.DNS is None else server.DNS.Value)
+                    if service:
+                        server.Service = service
+                        db.update_server(server)
                 servers = db.find_incomplete_servers()
+            elif(request.form['actionType'] == 'editApplicationConfiguration'):
+                if(len(request.values) != 10): raise pandoreException.PandoreException("Invalid number of arguments")
+                db.update_configuration(PandoreConfiguration(int(request.form['analytics_timeout']), int(request.form['nutriscore_reference_frequency']), float(request.form['nutriscore_reference_debit']), int(request.form['nutriscore_reference_diversity']), int(request.form['nutriscore_weight_frequency']), int(request.form['nutriscore_weight_debit']), int(request.form['nutriscore_weight_diversity']), float(request.form['nutriscore_sigmoide_slope']), int(request.form['nutriscore_average_type'])))
+                config = db.get_configuration()
 
         db.close_db()
 
@@ -423,7 +464,8 @@ def services():
             "configuration.html",
             unknownServers = servers,
             allServices = services,
-            allDNS = dns
+            allDNS = dns,
+            config = config
         )
     except pandoreException.PandoreException as e:
         if db :
@@ -454,16 +496,6 @@ def split_array(arr, size):
          arr   = arr[size:]
      arrs.append(arr)
      return arrs
-
-def threadFunction(servers: list[PandoreServer], db:pandoreDB.PandoreDB):
-    analytics = PandoreAnalytics()
-    for server in servers:
-        serviceName = analytics.analyse_ip_dns(server.Address, None if server.DNS is None else server.DNS.Value)
-        if serviceName:
-            found_service = db.find_service_by_name(serviceName)
-            if found_service:
-                server.Service = found_service
-                db.update_server(server)
 
 def calculateSigmoide(slope: float, reference: float, value: float):
     if reference > 500:

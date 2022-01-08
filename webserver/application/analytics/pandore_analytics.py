@@ -6,7 +6,11 @@
 from ipwhois import IPWhois  # IP
 from whois import whois  # DomainName
 import socket # DomainName
-from application.analytics.services_dictionary import SERVICES_DICTIONARY
+import multiprocessing # thread
+import ipaddress
+from multiprocessing import Queue
+from application import configuration
+from application.models import *
 
 
 # VARIABLES=====================================================================
@@ -15,26 +19,53 @@ from application.analytics.services_dictionary import SERVICES_DICTIONARY
 
 class PandoreAnalytics:
 
-    def __init__(self):
+    dictionary: list[PandoreAnalyticsServiceKeywords]
+
+    def __init__(self, dictionary = list[PandoreAnalyticsServiceKeywords]):
+        self.dictionary = dictionary
         print("Pandore analytics is running")
 
-    def analyse_ip_dns(self, ip, dns=None):
+    def analyse_ip_dns(self, timeout: int, ip, dns=None):
 
-        if dns is not None:
+        # Check for private adresses
+        if (ipaddress.ip_address(ip).is_private):
+            print("Str 0 - Service found for " + ip + " : Intranet service")
+            for val in self.dictionary:
+                if val.Service.Name == "Intranet service":
+                    return val.Service
+            return None
+
+        if dns:
             # 1st try to parse the dns
-            for key in SERVICES_DICTIONARY:
-                # 1st try to parse the dns
-                if any(srvc in dns for srvc in SERVICES_DICTIONARY[key]):
-                    print("Str 1 - Service found for " + dns + " : " + key)
-                    return key
+            for val in self.dictionary:
+                for keyword in val.Keywords:
+                    if(keyword.Value in dns):
+                        print("Str 1 - Service found for " + dns + " : " + val.Service.Name)
+                        return val.Service
 
+        queue = Queue()
+        thread = multiprocessing.Process(target=self.process_analyse_ip_dns, args=(queue, ip, dns,))
+        thread.start()
+        thread.join(timeout)
+
+        if thread.is_alive():
+            print("Timeout for ip = " + ip)
+            thread.terminate()
+            thread.join()
+            return None
+        
+        return queue.get()
+
+    def process_analyse_ip_dns(self, queue, ip, dns=None):
+        if dns is not None:
             # 2nd to find the service using the DNS lookup
             try:
                 dns_info = whois(dns)
-                for key in SERVICES_DICTIONARY:
-                    if any(srvc in dns_info["org"].lower() for srvc in SERVICES_DICTIONARY[key]):
-                        print("Str 2 - Service found for " + dns + " : " + key)
-                        return key
+                for val in self.dictionary:
+                    for keyword in val.Keywords:
+                        if(keyword.Value in dns_info["org"].lower()):
+                            print("Str 2 - Service found for " + dns + " : " + val.Service.Name)
+                            queue.put(val.Service)
             except:
                 pass
 
@@ -42,25 +73,23 @@ class PandoreAnalytics:
         try:
             socket.setdefaulttimeout(3)
             host_info = socket.gethostbyaddr(ip)
-            for key in SERVICES_DICTIONARY:
-                 if any(srvc in host_info[0].lower() for srvc in SERVICES_DICTIONARY[key]):
-                    print("Str 3 - Service found for " + ip + " : " + key)
-                    return key
+            for val in self.dictionary:
+                for keyword in val.Keywords:
+                    if(keyword.Value in host_info[0].lower()):
+                        print("Str 3 - Service found for " + ip + " : " +  val.Service.Name)
+                        queue.put(val.Service)
         except:
             pass
 
         # 4th to find the service using the IP lookup
         try:
             ip_info = IPWhois(ip).lookup_rdap()
-            for key in SERVICES_DICTIONARY:
-                if any(srvc in ip_info['asn_description'].lower() for srvc in SERVICES_DICTIONARY[key]):
-                    print("Str 4 - Service found for " + ip + " : " + key)
-                    return key
+            for val in self.dictionary:
+                for keyword in val.Keywords:
+                    if(keyword.Value in ip_info['asn_description'].lower()):
+                        print("Str 4 - Service found for " + ip + " : " +  val.Service.Name)
+                        queue.put(val.Service)
         except:
             pass
 
-        return None
-
-    def list_services(self):
-        for key in SERVICES_DICTIONARY:
-            print(key)
+        queue.put(None)
