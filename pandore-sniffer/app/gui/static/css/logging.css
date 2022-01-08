@@ -39,3 +39,25 @@
     background-color: #83DC5A;
     color: white;
 }
+
+.controls{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.controls input{
+    margin: 10px;
+}
+
+.api{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px;
+}
+
+.api button{
+    background-color: #83DC5A;
+}
