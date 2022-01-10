@@ -20,44 +20,48 @@
     border-collapse: collapse;
     width: 75%;
     margin: auto;
+    margin-top: 5px;
 }
 
-.table td, .table th {
-    border: 1px solid black;
-    padding: 8px;
-}
-
-.table tr:nth-child(even) {
-    background-color: #f2f2f2;
-}
-
-
-.table th {
-    padding-top: 12px;
-    padding-bottom: 12px;
-    text-align: left;
-    background-color: #83DC5A;
+.table thead th{
+    background-color: #2A680E;
     color: white;
 }
 
-.controls{
+.table tbody td, .table tbody th, .table thead tr, .table thead th {
+    border: 1px solid black;
+    padding: 3px;
+}
+
+.table tbody tr:nth-child(even) {
+    background-color: #f2f2f2;
+    text-align: center;
+}
+
+.table tbody th {
+    padding-top: 2px;
+    padding-bottom: 2px;
+    text-align: center;
+    background-color: #70D642;
+    color: black;
+}
+.control-buttons{
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
+.control-buttons form{
 
-.controls input{
+    display: inline-block;
+}
+
+
+.control-buttons form input{
     margin: 10px;
 }
 
 .api{
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 20px;
-}
+    margin: 10px;
 
-.api button{
-    background-color: #83DC5A;
 }

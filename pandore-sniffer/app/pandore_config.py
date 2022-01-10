@@ -16,6 +16,9 @@ DB = "Pandore"  # DB name
 
 ## CAPTURE CONFIG
 CAPTURE_NAME = "capture"  # The name of the capture
-CAPTURE_DURATION = 60  # The duration of the capture in second
+CAPTURE_DURATION = 10  # The duration of the capture in second
 CAPTURE_DESCRIPTION = "description test"  # The description of the capture
 CAPTURE_CNX_TYPE = "Cable-pc"  # A description of the interface used
+
+# SNIFFER GUI
+PANDORE_SNIFFER_GUI = True

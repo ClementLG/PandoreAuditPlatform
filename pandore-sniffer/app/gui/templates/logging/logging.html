@@ -6,6 +6,8 @@
     <link rel="stylesheet" type=text/css href="/static/css/logging.css">
     <title>Sniffer live console</title>
     <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <script type="text/javascript" src="/static/js/functions.js"></script>
+    <! -- console script -->
     <script>
         $(document).ready(function () {
             var output = document.getElementById('output');
@@ -17,32 +19,93 @@
             }, 500);
         });
     </script>
+    <! -- end console script -->
 </head>
 <body id="main">
+<! -- logging console -->
 <div class="row">
-    <h2 align="center">Sniffer config</h2>
-    <div>
-        <table class="table">
-            <tr><th>Pandore DB</th><th>Selected interface</th><th>Selected network</th></tr>
-            <tr><td>db_IP</td><td>ETHXX</td><td>192.x.x.x</td></tr>
-        </table>
-    </div>
-</div>
-<div class="row">
-    <h2 align="center">Logging will appear here:</h2>
+    <h2 align="center">Live logging</h2>
     <div class="logging_window">
         <pre id="output"></pre>
     </div>
 </div>
-<div>
-    <form method="post" action="/" class="controls">
+<! -- end logging console -->
+<! -- control buttons -->
+<div class="control-buttons">
+    <form method="post" onsubmit="start_button(); return false;">
         <input type="submit" name="submit_button" value="Start">
-        <input type="submit" name="submit_button" value="Stop">
-        <input type="submit" name="submit_button" value="Clear">
     </form>
+    <form method="post" onsubmit="stop_button(); return false;">
+        <input type="submit" name="submit_button" value="Stop">
+    </form>
+    <button class="api" onclick="location.href = '/';">Clear</button>
+    <button class="api" onclick="location.href = '/api';">Go to API doc</button>
+
 </div>
-<div class="api">
-    <button onclick="location.href = '/api';">Go to API doc</button>
+<! -- end control buttons -->
+<! -- config tabs -->
+<div class="row">
+    <h2 align="center">Sniffer config</h2>
+    <div>
+        <table class="table">
+            <thead class="tab-header">
+            <tr>
+                <th colspan="100%">Network</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                {% for config in configs.network %}
+                <th>{{config}}</th>
+                {% endfor %}
+            </tr>
+            <tr>
+                {% for key, value in configs.network.items() %}
+                <th>{{value}}</th>
+                {% endfor %}
+            </tr>
+            </tbody>
+        </table>
+        <table class="table">
+            <thead class="tab-header">
+            <tr>
+                <th colspan="100%">Database</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                {% for config in configs.database %}
+                <th>{{config}}</th>
+                {% endfor %}
+            </tr>
+            <tr>
+                {% for key, value in configs.database.items() %}
+                <th>{{value}}</th>
+                {% endfor %}
+            </tr>
+            </tbody>
+        </table>
+        <table class="table">
+            <thead class="tab-header">
+            <tr>
+                <th colspan="100%">Capture</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                {% for config in configs.capture %}
+                <th>{{config}}</th>
+                {% endfor %}
+            </tr>
+            <tr>
+                {% for key, value in configs.capture.items() %}
+                <th>{{value}}</th>
+                {% endfor %}
+            </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
+<! -- end config tabs -->
 </body>
 </html>
