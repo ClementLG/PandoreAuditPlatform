@@ -14,20 +14,16 @@ __description__ = "The agent is the application which allow to send the network 
 
 # IMPORTS======================================================================
 import asyncio.exceptions
-import random
-from pandore_config import *
 from pandore_sniffer import PandoreSniffer
 
 
-# FUNCTIONS====================================================================
+# VARIABLES====================================================================
 
 
 
 # MAIN=========================================================================
 
-r = random.randint(0, 10000000000000)
-
-capture = PandoreSniffer(CAPTURE_NAME + str(r), CAPTURE_DURATION, CAPTURE_DESCRIPTION, CAPTURE_CNX_TYPE)
+capture = PandoreSniffer()
 
 try:
     capture.run()

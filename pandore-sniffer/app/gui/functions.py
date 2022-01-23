@@ -6,10 +6,9 @@ import asyncio
 import datetime
 from time import sleep
 from app.pandore_sniffer import PandoreSniffer
-from app.pandore_config import *
+from app.pandore_config import PandoreConfig
 import threading
 from multiprocessing import Process
-import subprocess
 
 
 # VARIABLES=====================================================================
@@ -46,7 +45,7 @@ def start_sniffer_subfunction():
         print("--------------------------------------------------ALREADY IN USE")
     else:
         try:
-            SNIFFER.append(PandoreSniffer(CAPTURE_NAME, CAPTURE_DURATION, CAPTURE_DESCRIPTION, CAPTURE_CNX_TYPE))
+            SNIFFER.append(PandoreSniffer())
             SNIFFER[0].run()
         except asyncio.exceptions.TimeoutError:
             SNIFFER[0].finish()
@@ -65,12 +64,7 @@ def start_sniffer_subfunction_v2():
     else:
         try:
             SNIFFER_v2.append(Process(
-                target=PandoreSniffer(
-                    CONFIG.get_parameter('capture', 'CAPTURE_NAME'),
-                    CONFIG.get_parameter('capture', 'CAPTURE_DURATION'),
-                    CONFIG.get_parameter('capture', 'CAPTURE_DESCRIPTION'),
-                    CONFIG.get_parameter('capture', 'CAPTURE_CNX_TYPE')
-                ).run()))
+                target=PandoreSniffer().run()))
             SNIFFER_v2[0].start()
         except Exception as e:
             print("An error occurred ! \n" + e)

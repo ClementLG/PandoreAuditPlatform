@@ -16,7 +16,7 @@ __description__ = "The agent is the application which allow to send the network 
 # IMPORTS======================================================================
 import asyncio
 import os
-from pandore_config import *
+from pandore_config import PandoreConfig
 import pandore_sender
 import pyshark
 import json
@@ -26,28 +26,50 @@ import math
 
 # VARIABLES=====================================================================
 
+CONFIG = PandoreConfig('pandore_config.ini')
 # DNS sniffed dictionary
 DNS = {}
 
 
+# CONFIG.get_parameter('capture', 'CAPTURE_CNX_TYPE')
+
 # CLASS=========================================================================
 
 class PandoreSniffer:
-    def __init__(self, name, duration, description, cnx_type):
+    def __init__(self, filename='pandore_config.ini'):
+        CONFIG = PandoreConfig(filename)
         update_variable_docker()
         print_project_info()
         print_agent_config()
-        self.name = name
-        self.duration = duration
+        self.name = CONFIG.get_parameter('capture', 'CAPTURE_NAME')
+        self.duration = int(CONFIG.get_parameter('capture', 'CAPTURE_DURATION'))
         self.start_time = datetime.datetime.now()
         self.end_time = None
-        self.db = pandore_sender.PandoreSender(DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB)
-        self.db.create_capture(name, self.start_time, self.end_time, description, AUDITED_INTERFACE, cnx_type)
-        self.capture_id = self.db.get_capture_id(name)
-        self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE,
-                                       bpf_filter="( dst net " + str(DEVICE_NETWORK) + " or src net " + str(
-                                           DEVICE_NETWORK) + " ) and " + "( " + CUSTOM_FILTER + " )")
-        # self.cap = pyshark.LiveCapture(interface=AUDITED_INTERFACE, bpf_filter='port 53')
+        self.db = pandore_sender.PandoreSender(
+            CONFIG.get_parameter('database', 'DB_HOST'),
+            CONFIG.get_parameter('database', 'DB_PORT'),
+            CONFIG.get_parameter('database', 'DB_USER'),
+            CONFIG.get_parameter('database', 'DB_PASSWORD'),
+            CONFIG.get_parameter('database', 'DB')
+        )
+        self.db.create_capture(
+            self.name,
+            self.start_time,
+            self.end_time,
+            CONFIG.get_parameter('capture', 'CAPTURE_DESCRIPTION'),
+            CONFIG.get_parameter('network', 'AUDITED_INTERFACE'),
+            CONFIG.get_parameter('capture', 'CAPTURE_CNX_TYPE')
+        )
+        self.capture_id = self.db.get_capture_id(self.name)
+        self.cap = pyshark.LiveCapture(
+            interface=CONFIG.get_parameter('network', 'AUDITED_INTERFACE'),
+            bpf_filter="( dst net " +
+                       str(CONFIG.get_parameter('network', 'DEVICE_NETWORK'))
+                       + " or src net "
+                       + str(CONFIG.get_parameter('network', 'DEVICE_NETWORK'))
+                       + " ) and "
+                       + "( " + CONFIG.get_parameter('network', 'CUSTOM_FILTER')
+                       + " )")
         self.cap.sniff(packet_count=10)
 
     def run(self):
@@ -61,7 +83,15 @@ class PandoreSniffer:
 
 
     def finish(self):
-        self.db.update_capture(self.capture_id, self.name, self.start_time, datetime.datetime.now(), CAPTURE_DESCRIPTION, AUDITED_INTERFACE, CAPTURE_CNX_TYPE)
+        self.db.update_capture(
+            self.capture_id,
+            self.name,
+            self.start_time,
+            datetime.datetime.now(),
+            CONFIG.get_parameter('capture', 'CAPTURE_DESCRIPTION'),
+            CONFIG.get_parameter('network', 'AUDITED_INTERFACE'),
+            CONFIG.get_parameter('capture', 'CAPTURE_CNX_TYPE')
+        )
         self.db.close_db()
 
     def pkt_to_db(self, pkt):
@@ -194,14 +224,14 @@ def out_dns_layer_field(ip_layer_field, output_type):
 
 
 def determine_direction(src_ip):
-    if ipaddress.ip_address(src_ip) in ipaddress.ip_network(DEVICE_NETWORK):
+    if ipaddress.ip_address(src_ip) in ipaddress.ip_network(CONFIG.get_parameter('network', 'DEVICE_NETWORK')):
         return "1"
     else:
         return "0"
 
 
 def determine_ip_saved(src_ip, dst_ip):
-    if ipaddress.ip_address(src_ip) in ipaddress.ip_network(DEVICE_NETWORK):
+    if ipaddress.ip_address(src_ip) in ipaddress.ip_network(CONFIG.get_parameter('network', 'DEVICE_NETWORK')):
         return str(dst_ip)
     else:
         return str(src_ip)
@@ -221,38 +251,38 @@ def print_agent_config():
     print('# ' + '=' * 50)
     print(' CONFIG')
     print('# ' + '=' * 50)
-    print('Audited interface: ' + AUDITED_INTERFACE)
-    print('Device network: ' + DEVICE_NETWORK)
+    print('Audited interface: ' + CONFIG.get_parameter('network', 'AUDITED_INTERFACE'))
+    print('Device network: ' + CONFIG.get_parameter('network', 'DEVICE_NETWORK'))
     start_time = datetime.datetime.now()
-    end_time = start_time + datetime.timedelta(seconds=CAPTURE_DURATION)
+    end_time = start_time + datetime.timedelta(seconds=int(CONFIG.get_parameter('capture', 'CAPTURE_DURATION')))
     print("Start time: " + str(start_time.strftime("%d/%m/%Y - %H:%M:%S")))
     print("Expected end time: " + str(end_time.strftime("%d/%m/%Y - %H:%M:%S")))
     print('# ' + '=' * 50)
 
 def update_variable_docker():
     if os.environ.get('PANDORE_AUDITED_INTERFACE') is not None:
-        globals()['AUDITED_INTERFACE'] = os.environ.get('PANDORE_AUDITED_INTERFACE')
+        CONFIG.update_parameter('network', 'AUDITED_INTERFACE', str(os.environ.get('PANDORE_AUDITED_INTERFACE')))
     if os.environ.get('PANDORE_DEVICE_NETWORK') is not None:
-        globals()['DEVICE_NETWORK'] = os.environ.get('PANDORE_DEVICE_NETWORK')
+        CONFIG.update_parameter('network', 'DEVICE_NETWORK', str(os.environ.get('PANDORE_DEVICE_NETWORK')))
     if os.environ.get('PANDORE_CUSTOM_FILTER') is not None:
-        globals()['CUSTOM_FILTER'] = os.environ.get('PANDORE_CUSTOM_FILTER')
+        CONFIG.update_parameter('network', 'CUSTOM_FILTER', str(os.environ.get('PANDORE_CUSTOM_FILTER')))
     if os.environ.get('PANDORE_DB_HOST') is not None:
-        globals()['DB_HOST'] = os.environ.get('PANDORE_DB_HOST')
+        CONFIG.update_parameter('database', 'DB_HOST', str(os.environ.get('PANDORE_DB_HOST')))
     if os.environ.get('PANDORE_DB_PORT') is not None:
-        globals()['DB_PORT'] = os.environ.get('PANDORE_DB_PORT')
+        CONFIG.update_parameter('database', 'DB_PORT', str(os.environ.get('PANDORE_DB_PORT')))
     if os.environ.get('PANDORE_DB_USER') is not None:
-        globals()['B_USER'] = os.environ.get('PANDORE_DB_USER')
+        CONFIG.update_parameter('database', 'DB_USER', str(os.environ.get('PANDORE_DB_USER')))
     if os.environ.get('PANDORE_DB_PASSWORD') is not None:
-        globals()['DB_PASSWORD'] = os.environ.get('PANDORE_DB_PASSWORD')
+        CONFIG.update_parameter('database', 'DB_PASSWORD', str(os.environ.get('PANDORE_DB_PASSWORD')))
     if os.environ.get('PANDORE_DB') is not None:
-        globals()['DB'] = os.environ.get('PANDORE_DB')
+        CONFIG.update_parameter('database', 'DB', str(os.environ.get('PANDORE_DB')))
     if os.environ.get('PANDORE_CAPTURE_NAME') is not None:
-        globals()['CAPTURE_NAME'] = os.environ.get('PANDORE_CAPTURE_NAME')
+        CONFIG.update_parameter('capture', 'CAPTURE_NAME', str(os.environ.get('PANDORE_CAPTURE_NAME')))
     if os.environ.get('PANDORE_CAPTURE_DURATION') is not None:
-        globals()['CAPTURE_DURATION'] = os.environ.get('PANDORE_CAPTURE_DURATION')
+        CONFIG.update_parameter('capture', 'CAPTURE_DURATION', str(os.environ.get('PANDORE_CAPTURE_DURATION')))
     if os.environ.get('PANDORE_CAPTURE_DESCRIPTION') is not None:
-        globals()['CAPTURE_DESCRIPTION'] = os.environ.get('PANDORE_CAPTURE_DESCRIPTION')
+        CONFIG.update_parameter('capture', 'CAPTURE_DESCRIPTION', str(os.environ.get('PANDORE_CAPTURE_DESCRIPTION')))
     if os.environ.get('PANDORE_CAPTURE_CNX_TYPE') is not None:
-        globals()['CAPTURE_CNX_TYPE'] = os.environ.get('PANDORE_CAPTURE_CNX_TYPE')
+        CONFIG.update_parameter('capture', 'CAPTURE_CNX_TYPE', str(os.environ.get('PANDORE_CAPTURE_CNX_TYPE')))
     if os.environ.get('PANDORE_SNIFFER_GUI') is not None:
-        globals()['PANDORE_SNIFFER_GUI'] = os.environ.get('PANDORE_SNIFFER_GUI')
+        CONFIG.update_parameter('gui', 'SNIFFER_GUI', str(os.environ.get('PANDORE_SNIFFER_GUI')))
