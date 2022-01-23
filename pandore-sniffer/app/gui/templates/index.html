@@ -7,29 +7,13 @@
     <title>Sniffer live console</title>
     <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
     <script type="text/javascript" src="/static/js/functions.js"></script>
-    <! -- console script -->
-    <script>
-        $(document).ready(function () {
-            var output = document.getElementById('output');
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', 'log_stream', true);
-            xhr.send();
-            setInterval(function () {
-                output.textContent = xhr.responseText;
-            }, 500);
-        });
-    </script>
-    <! -- end console script -->
 </head>
 <body id="main">
-<! -- logging console -->
-<div class="row">
-    <h2 align="center">Live logging</h2>
-    <div class="logging_window">
-        <pre id="output"></pre>
-    </div>
+<! -- Sniffer Status -->
+<div class="status">
+    <p>Sniffer is not running</p>
 </div>
-<! -- end logging console -->
+<! -- end Sniffer Status -->
 <! -- control buttons -->
 <div class="control-buttons">
     <form method="post" onsubmit="start_button(); return false;">

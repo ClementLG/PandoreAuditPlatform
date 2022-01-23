@@ -63,5 +63,8 @@
 
 .api{
     margin: 10px;
+}
 
+.status p {
+    text-align: center;
 }

@@ -19,13 +19,6 @@ CONFIG = PandoreConfig('pandore_config.ini')
 
 # FUNCTIONS====================================================================
 
-def flask_logger():
-    for i in range(100):
-        current_time = datetime.datetime.now().strftime('%H:%M:%S') + "\n"
-        yield current_time.encode()
-        sleep(1)
-
-
 def update_variable_config(config_json):
     for section in config_json:
         for parameter in config_json[section]:

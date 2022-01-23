@@ -12,12 +12,7 @@ from app.gui.functions import *
 @sniffer_gui.route("/", methods=["GET"])
 @sniffer_gui.route('/index', methods=["GET"])
 def index():
-    return render_template("logging/logging.html", configs=get_sniffer_config())
-
-
-@sniffer_gui.route("/log_stream", methods=["GET"])
-def stream():
-    return Response(flask_logger(), mimetype='text/html', content_type="text/event-stream")
+    return render_template("index.html", configs=get_sniffer_config())
 
 
 @sniffer_gui.route("/api/configuration", methods=["GET"])
