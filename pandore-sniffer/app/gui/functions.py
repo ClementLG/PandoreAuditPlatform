@@ -9,11 +9,14 @@ from app.pandore_sniffer import PandoreSniffer
 from app.pandore_config import *
 import threading
 from multiprocessing import Process
+import subprocess
+
 
 # VARIABLES=====================================================================
 
 SNIFFER = []
 SNIFFER_v2 = []
+CONFIG = PandoreConfig('pandore_config.ini')
 
 
 # FUNCTIONS====================================================================
@@ -26,48 +29,16 @@ def flask_logger():
 
 
 def update_variable_config(config_json):
-    print(config_json)
-    if 'network' in config_json:
-        for conf in config_json['network']:
-            if conf in locals():
-                globals()[conf] = config_json['network'][conf]
-            print(conf + "-->" + str(config_json['network'][conf]))
-    if 'database' in config_json:
-        for conf in config_json['database']:
-            if conf in locals():
-                print("exist")
-                globals()[conf] = config_json['database'][conf]
-            print(conf + "-->" + str(config_json['database'][conf]))
-    if 'capture' in config_json:
-        for conf in config_json['capture']:
-            if conf in locals():
-                globals()[conf] = config_json['capture'][conf]
-            print(conf + "-->" + str(config_json['capture'][conf]))
+    for section in config_json:
+        for parameter in config_json[section]:
+            CONFIG.update_parameter(section, parameter, config_json[section][parameter])
+
+    pass
 
 
 def get_sniffer_config():
-    config_json = {
-        'network': {
-            'AUDITED_INTERFACE': AUDITED_INTERFACE,
-            'DEVICE_NETWORK': DEVICE_NETWORK,
-            'CUSTOM_FILTER': CUSTOM_FILTER
-        },
-        'database': {
-            'DB_HOST': DB_HOST,
-            'DB_PORT': DB_PORT,
-            'DB_USER': DB_USER,
-            'DB_PASSWORD': DB_PASSWORD,
-            'DB': DB
-        },
-        'capture': {
-            'CAPTURE_NAME': CAPTURE_NAME,
-            'CAPTURE_DURATION': CAPTURE_DURATION,
-            'CAPTURE_DESCRIPTION': CAPTURE_DESCRIPTION,
-            'CAPTURE_CNX_TYPE': CAPTURE_CNX_TYPE
-        }
-
-    }
-    return config_json
+    json = CONFIG.get_json_config()
+    return json
 
 
 def start_sniffer_subfunction():
@@ -94,7 +65,12 @@ def start_sniffer_subfunction_v2():
     else:
         try:
             SNIFFER_v2.append(Process(
-                target=PandoreSniffer(CAPTURE_NAME, CAPTURE_DURATION, CAPTURE_DESCRIPTION, CAPTURE_CNX_TYPE).run()))
+                target=PandoreSniffer(
+                    CONFIG.get_parameter('capture', 'CAPTURE_NAME'),
+                    CONFIG.get_parameter('capture', 'CAPTURE_DURATION'),
+                    CONFIG.get_parameter('capture', 'CAPTURE_DESCRIPTION'),
+                    CONFIG.get_parameter('capture', 'CAPTURE_CNX_TYPE')
+                ).run()))
             SNIFFER_v2[0].start()
         except Exception as e:
             print("An error occurred ! \n" + e)
