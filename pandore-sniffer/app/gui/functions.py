@@ -10,7 +10,6 @@ from app.pandore_config import PandoreConfig
 import threading
 from multiprocessing import Process
 
-
 # VARIABLES=====================================================================
 
 SNIFFER = []
@@ -31,8 +30,8 @@ def update_variable_config(config_json):
     for section in config_json:
         for parameter in config_json[section]:
             CONFIG.update_parameter(section, parameter, config_json[section][parameter])
+    CONFIG.save_config()
 
-    pass
 
 
 def get_sniffer_config():

@@ -29,4 +29,12 @@ class PandoreConfig:
         if self.config.has_option(section, parameter):
             self.config[section][parameter] = str(value)
         else:
-            print("Error updating parameter : "+section+" with "+parameter+" doesn't exist")
+            print("Error updating parameter : " + section + " with " + parameter + " doesn't exist")
+
+    def save_config(self):
+        try:
+            with open(self.file_name, 'w') as configfile:
+                self.config.write(configfile)
+            print("Pandore sniffer config saved !")
+        except:
+            print("Error ! Unable to save config !")
