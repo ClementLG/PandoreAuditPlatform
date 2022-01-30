@@ -3,8 +3,8 @@
 # IMPORTS======================================================================
 
 from flask import Flask, jsonify, request, render_template, Response
-from app.gui import sniffer_gui
-from app.gui.functions import *
+from application.gui import sniffer_gui
+from application.gui.functions import *
 
 
 # FLASK ROUTES===================================================================
@@ -30,11 +30,16 @@ def config_post():
 
 @sniffer_gui.route("/api/start", methods=["POST"])
 def start_sniffer():
-    start_sniffer_subfunction_v2()
+    start_sniffer_subfunction()
     return jsonify('Start OK')
 
 
 @sniffer_gui.route("/api/stop", methods=["POST"])
 def stop_sniffer():
-    stop_sniffer_subfunction_v2()
+    stop_sniffer_subfunction()
     return jsonify('Stop OK')
+
+
+@sniffer_gui.route("/api/status", methods=["GET"])
+def status_get():
+    return jsonify(get_status())

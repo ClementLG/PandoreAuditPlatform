@@ -16,6 +16,8 @@ __description__ = "The agent is the application which allow to send the network 
 # IMPORTS======================================================================
 import asyncio
 import os
+from random import random
+
 from pandore_config import PandoreConfig
 import pandore_sender
 import pyshark
@@ -30,18 +32,17 @@ CONFIG = PandoreConfig('pandore_config.ini')
 # DNS sniffed dictionary
 DNS = {}
 
-
 # CONFIG.get_parameter('capture', 'CAPTURE_CNX_TYPE')
 
 # CLASS=========================================================================
 
 class PandoreSniffer:
-    def __init__(self, filename='pandore_config.ini'):
+    def __init__(self, filename='pandore_config.ini', stop_thread=False):
         CONFIG = PandoreConfig(filename)
         update_variable_docker()
         print_project_info()
         print_agent_config()
-        self.name = CONFIG.get_parameter('capture', 'CAPTURE_NAME')
+        self.name = CONFIG.get_parameter('capture', 'CAPTURE_NAME')+str(int(random()*1000000))
         self.duration = int(CONFIG.get_parameter('capture', 'CAPTURE_DURATION'))
         self.start_time = datetime.datetime.now()
         self.end_time = None
@@ -70,19 +71,22 @@ class PandoreSniffer:
                        + " ) and "
                        + "( " + CONFIG.get_parameter('network', 'CUSTOM_FILTER')
                        + " )")
-        self.cap.sniff(packet_count=10)
+        self.cap.sniff(packet_count=1)
+        self.running = None
 
     def run(self):
         try:
+            self.running = True
             self.cap.apply_on_packets(self.pkt_to_db, timeout=self.duration)
         except asyncio.exceptions.TimeoutError:
             self.finish()
             print("\nEnd of the capture !")
         except Exception as e:
+            self.running = False
             print("An error occurred ! \n" + e)
 
-
-    def finish(self):
+    def finish(self, thread=False):
+        self.running = False
         self.db.update_capture(
             self.capture_id,
             self.name,
@@ -93,6 +97,8 @@ class PandoreSniffer:
             CONFIG.get_parameter('capture', 'CAPTURE_CNX_TYPE')
         )
         self.db.close_db()
+        if thread:
+            raise asyncio.exceptions.TimeoutError
 
     def pkt_to_db(self, pkt):
         try:
@@ -125,6 +131,7 @@ class PandoreSniffer:
                 print(e)
 
         except Exception as e:
+            self.running = False
             print("A error occurred : \n" + e)
 
     def dns_to_db(self, domain_name, ip_list):
@@ -136,6 +143,9 @@ class PandoreSniffer:
         except Exception as e:
             print(e)
             pass
+
+    def get_running_status(self):
+        return self.running
 
 
 # FUNCTIONS=====================================================================
@@ -236,6 +246,7 @@ def determine_ip_saved(src_ip, dst_ip):
     else:
         return str(src_ip)
 
+
 def print_project_info():
     print('# ' + '=' * 50)
     print(' INFOS')
@@ -258,6 +269,7 @@ def print_agent_config():
     print("Start time: " + str(start_time.strftime("%d/%m/%Y - %H:%M:%S")))
     print("Expected end time: " + str(end_time.strftime("%d/%m/%Y - %H:%M:%S")))
     print('# ' + '=' * 50)
+
 
 def update_variable_docker():
     if os.environ.get('PANDORE_AUDITED_INTERFACE') is not None:

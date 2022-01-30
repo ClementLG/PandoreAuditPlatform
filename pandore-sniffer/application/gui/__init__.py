@@ -1,4 +1,4 @@
-# PANDORE SNIFFER API - Flask app
+# PANDORE SNIFFER API - Flask application
 
 # IMPORTS======================================================================
 
@@ -23,4 +23,4 @@ sniffer_gui.register_blueprint(SWAGGERUI_BLUEPRINT, url_prefix=SWAGGER_URL)
 
 # VIEWS=========================================================================
 
-from app.gui.views import *
+from application.gui.views import *

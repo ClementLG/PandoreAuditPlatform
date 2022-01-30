@@ -11,7 +11,7 @@
 <body id="main">
 <! -- Sniffer Status -->
 <div class="status">
-    <p>Sniffer is not running</p>
+    <p id="sysStatus">{{ status }}</p>
 </div>
 <! -- end Sniffer Status -->
 <! -- control buttons -->
@@ -22,7 +22,6 @@
     <form method="post" onsubmit="stop_button(); return false;">
         <input type="submit" name="submit_button" value="Stop">
     </form>
-    <button class="api" onclick="location.href = '/';">Clear</button>
     <button class="api" onclick="location.href = '/api';">Go to API doc</button>
 
 </div>
@@ -92,4 +91,15 @@
 </div>
 <! -- end config tabs -->
 </body>
+<script>
+$(document).ready(function() {
+    setInterval("ajaxd()",1000); // call every 1 seconds
+});
+
+function ajaxd() {
+  //reload result into element with id "sysStatus"
+  $("#sysStatus").load("/api/status", function() {});
+
+}
+</script>
 </html>

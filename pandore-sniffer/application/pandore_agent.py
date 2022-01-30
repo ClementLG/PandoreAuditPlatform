@@ -14,21 +14,24 @@ __description__ = "The agent is the application which allow to send the network 
 
 # IMPORTS======================================================================
 import asyncio.exceptions
+import os
 from pandore_sniffer import PandoreSniffer
-
+from pandore_config import PandoreConfig
 
 # VARIABLES====================================================================
 
-
+CONFIG = PandoreConfig('pandore_config.ini')
 
 # MAIN=========================================================================
 
-capture = PandoreSniffer()
-
-try:
-    capture.run()
-except asyncio.exceptions.TimeoutError:
-    capture.finish()
-    print("\nEnd of the capture !")
-except Exception as e:
-    print("An error occurred ! \n" + e)
+if CONFIG.get_parameter('gui', 'sniffer_gui') == 'True':
+    os.system('python pandore_api.py')
+else:
+    capture = PandoreSniffer()
+    try:
+        capture.run()
+    except asyncio.exceptions.TimeoutError:
+        capture.finish()
+        print("\nEnd of the capture !")
+    except Exception as e:
+        print("An error occurred ! \n" + e)
