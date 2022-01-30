@@ -29,6 +29,9 @@
                         <li class="nav-item">
                             <a class="nav-link" href="/configuration">Configuration</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/sniffer_configuration">Sniffer configuration</a>
+                        </li>
                     </ul>
                     <span class="navbar-text">
                         3<sup>rd</sup> year project
@@ -39,14 +42,25 @@
     </header>
     <content>
         <div class="container-fluid px-5 py-5">
-            <div class="row text-center text-imt-darkblue">
-                <h1>Waiting for a new capture ...</h1>
+            {% if error %}
+            <div class="alert alert-danger" role="alert">
+                {{ error }}
             </div>
-            <div class="row text-center">
-                <span class="bi bi-hourglass-split" style="font-size: 100px; color: rgb(0, 30, 66);"></span>
-            </div>
-            <div class="row">
-
+            {% endif %}
+            <div class="row justify-content-md-center">
+                <div class="col-sm-4 p-3">
+                    <div class="row text-center text-imt-darkblue">
+                        <h1>Waiting for a new capture ...</h1>
+                    </div>
+                    <div class="row text-center">
+                        <span class="bi bi-hourglass-split" style="font-size: 100px; color: rgb(0, 30, 66);"></span>
+                    </div>
+                    <div class="row px-5">
+                        <button type="button" class="btn btn-imt-green" data-bs-toggle="modal" data-bs-target="#modalRunCapture">
+                            <span class="bi bi-caret-right"></span> Start new capture
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </content>
@@ -68,12 +82,102 @@
             </div>
         </div>
     </footer>
+
+    <div class="modal fade" id="modalRunCapture" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <form method="post">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Run new capture</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="capture_name" class="form-label"><strong>Name :</strong></label>
+                            <input type="text" class="form-control" id="capture_name" name="capture_name" placeholder="My capture name" max="255" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="capture_duration" class="form-label"><strong>Duration (second) :</strong></label>
+                            <input type="number" class="form-control" id="capture_duration" name="capture_duration" min="1" step="1" value="60" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="capture_description" class="form-label"><strong>Description :</strong></label>
+                            <input type="text" class="form-control" id="capture_description" name="capture_description" placeholder="My capture description" max="1000" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="capture_connection_type" class="form-label"><strong>Connection type :</strong></label>
+                            <input type="text" class="form-control" id="capture_connection_type" name="capture_connection_type" placeholder="4G, Wi-Fi, Ethernet wire, etc..." max="255" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="interface_name" class="form-label"><strong>Interface name :</strong></label>
+                            <input type="text" class="form-control" id="interface_name" name="interface_name" placeholder="tun0, eth0, etc..." max="255" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="device_ip" class="form-label"><strong>Audited device(s) IP range :</strong></label>
+                            <div class="row" id="device_ip">
+                                <div class="col">
+                                    <input type="number" class="form-control" id="ip_w" name="ip_w" placeholder="192" min="0" max="255" step="1" value="192" required />
+                                </div>
+                                <div class="col-auto">
+                                    .
+                                </div>
+                                <div class="col">
+                                    <input type="number" class="form-control" id="ip_x" name="ip_x" placeholder="168" min="0" max="255" step="1" value="168" required />
+                                </div>
+                                <div class="col-auto">
+                                    .
+                                </div>
+                                <div class="col">
+                                    <input type="number" class="form-control" id="ip_y" name="ip_y" placeholder="10" min="0" max="255" step="1" value="10" required />
+                                </div>
+                                <div class="col-auto">
+                                    .
+                                </div>
+                                <div class="col">
+                                    <input type="number" class="form-control" id="ip_z" name="ip_z" placeholder="0" min="0" max="255" step="1" value="0" required />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="device_netmask" class="form-label"><strong>Audited device(s) netmask :</strong></label>
+                            <div class="row" id="device_netmask">
+                                <div class="col">
+                                    <input type="number" class="form-control" id="netmask_w" name="netmask_w" placeholder="255" min="0" max="255" step="1" value="255" required />
+                                </div>
+                                <div class="col-auto">
+                                    .
+                                </div>
+                                <div class="col">
+                                    <input type="number" class="form-control" id="netmask_x" name="netmask_x" placeholder="255" min="0" max="255" step="1" value="255" required />
+                                </div>
+                                <div class="col-auto">
+                                    .
+                                </div>
+                                <div class="col">
+                                    <input type="number" class="form-control" id="netmask_y" name="netmask_y" placeholder="255" min="0" max="255" step="1" value="255" required />
+                                </div>
+                                <div class="col-auto">
+                                    .
+                                </div>
+                                <div class="col">
+                                    <input type="number" class="form-control" id="netmask_z" name="netmask_z" placeholder="0" min="0" max="255" step="1" value="0" required />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-imt-green">Run</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 </html>
 
 <script>
     ajaxError = false;
-
     var intervalId = window.setInterval(function () {
         if (!ajaxError) {
             $.ajax({

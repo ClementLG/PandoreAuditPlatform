@@ -32,6 +32,9 @@
                         <li class="nav-item">
                             <a class="nav-link active" aria-current="page" href="/configuration">Configuration</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/sniffer_configuration">Sniffer configuration</a>
+                        </li>
                     </ul>
                     <span class="navbar-text">
                         3<sup>rd</sup> year project
@@ -47,69 +50,109 @@
                 {{ error }}
             </div>
             {% endif %}
-            <div class="row">
-                <div class="col-sm-6">
-                    <div class="row">
-                        <div class="col">
-                            <div class="card shadow mb-3">
-                                <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
-                                    <div class="row mb-5">
-                                        <span class="" style="font-size: 30px;">
-                                            Application configuration
-                                        </span>
-                                    </div>
-                                    <form method="post">
-                                        <input type="hidden" name="actionType" id="actionType" value="editApplicationConfiguration">
+            <div class="row mb-3">
+                <div class="col">
+                    <div class="card shadow mb-3">
+                        <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
+                            <div class="row mb-5">
+                                <span class="" style="font-size: 30px;">
+                                    Application configuration
+                                </span>
+                            </div>
+                            <form method="post">
+                                <input type="hidden" name="actionType" id="actionType" value="editApplicationConfiguration">
+                                <div class="row">
+                                    <div class="col-sm-4">
                                         <div class="mb-3">
-                                            <label for="analytics_timeout" class="form-label">Server automatic classification timeout</label>
-                                            <input type="number" class="form-control" id="analytics_timeout" name="analytics_timeout" aria-describedby="analytics_timeout_help" min="1" step="1" value="{{config.ANALYTICS_TIMEOUT}}">
+                                            <label for="sniffer_ip" class="form-label"><strong>Sniffer API address</strong></label>
+                                            <input type="text" class="form-control" id="sniffer_ip_w" name="sniffer_api_address" max="1000" value="{{config.SNIFFER_API_ADDRESS}}" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <div class="mb-3">
+                                            <label for="analytics_timeout" class="form-label"><strong>Server automatic classification timeout</strong></label>
+                                            <input type="number" class="form-control" id="analytics_timeout" name="analytics_timeout" aria-describedby="analytics_timeout_help" min="1" step="1" value="{{config.ANALYTICS_TIMEOUT}}" required>
                                             <div id="analytics_timeout_help" class="form-text">Maximum time in seconds to spend trying to find server associated service</div>
                                         </div>
+                                    </div>
+                                    <div class="col-sm-4">
                                         <div class="mb-3">
-                                            <label for="nutriscore_reference_frequency" class="form-label">Nutriscore reference value for frequency indicator</label>
-                                            <input type="number" class="form-control" id="nutriscore_reference_frequency" name="nutriscore_reference_frequency" aria-describedby="nutriscore_reference_frequency_help" min="1" step="1" value="{{config.NUTRISCORE_REFERENCE_FREQUENCY}}">
+                                            <label for="nutriscore_reference_frequency" class="form-label"><strong>Nutriscore reference value for frequency indicator</strong></label>
+                                            <input type="number" class="form-control" id="nutriscore_reference_frequency" name="nutriscore_reference_frequency" aria-describedby="nutriscore_reference_frequency_help" min="1" step="1" value="{{config.NUTRISCORE_REFERENCE_FREQUENCY}}" required>
                                             <div id="nutriscore_reference_frequency_help" class="form-text">Reference mean time in seconds between two UE connections</div>
                                         </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-4">
                                         <div class="mb-3">
-                                            <label for="nutriscore_reference_debit" class="form-label">Nutriscore reference value for debit indicator</label>
-                                            <input type="number" class="form-control" id="nutriscore_reference_debit" name="nutriscore_reference_debit" aria-describedby="nutriscore_reference_debit_help" min="0.001" step="0.001" value="{{config.NUTRISCORE_REFERENCE_DEBIT}}">
+                                            <label for="nutriscore_reference_debit" class="form-label"><strong>Nutriscore reference value for debit indicator</strong></label>
+                                            <input type="number" class="form-control" id="nutriscore_reference_debit" name="nutriscore_reference_debit" aria-describedby="nutriscore_reference_debit_help" min="0.001" step="0.001" value="{{config.NUTRISCORE_REFERENCE_DEBIT}}" required>
                                             <div id="nutriscore_reference_debit_help" class="form-text">Reference debit in MB/s (download + upload)</div>
                                         </div>
+                                    </div>
+                                    <div class="col-sm-4">
                                         <div class="mb-3">
-                                            <label for="nutriscore_reference_diversity" class="form-label">Nutriscore reference value for diversity indicator</label>
-                                            <input type="number" class="form-control" id="nutriscore_reference_diversity" name="nutriscore_reference_diversity" aria-describedby="nutriscore_reference_diversity_help" min="1" step="1" value="{{config.NUTRISCORE_REFERENCE_DIVERSITY}}">
+                                            <label for="nutriscore_reference_diversity" class="form-label"><strong>Nutriscore reference value for diversity indicator</strong></label>
+                                            <input type="number" class="form-control" id="nutriscore_reference_diversity" name="nutriscore_reference_diversity" aria-describedby="nutriscore_reference_diversity_help" min="1" step="1" value="{{config.NUTRISCORE_REFERENCE_DIVERSITY}}" required>
                                             <div id="nutriscore_reference_diversity_help" class="form-text">Reference number of distincts servers</div>
                                         </div>
+                                    </div>
+                                    <div class="col-sm-4">
                                         <div class="mb-3">
-                                            <label for="nutriscore_weight_frequency" class="form-label">Nutriscore frequency indicator coefficient for global score</label>
-                                            <input type="number" class="form-control" id="nutriscore_weight_frequency" name="nutriscore_weight_frequency" min="1" step="1" value="{{config.NUTRISCORE_WEIGHT_FREQUENCY}}">
+                                            <label for="nutriscore_weight_frequency" class="form-label"><strong>Nutriscore frequency indicator coefficient for global score</strong></label>
+                                            <input type="number" class="form-control" id="nutriscore_weight_frequency" name="nutriscore_weight_frequency" min="1" step="1" value="{{config.NUTRISCORE_WEIGHT_FREQUENCY}}" required>
                                         </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-4">
                                         <div class="mb-3">
-                                            <label for="nutriscore_weight_debit" class="form-label">Nutriscore debit indicator coefficient for global score</label>
-                                            <input type="number" class="form-control" id="nutriscore_weight_debit" name="nutriscore_weight_debit" min="1" step="1" value="{{config.NUTRISCORE_WEIGHT_DEBIT}}">
+                                            <label for="nutriscore_weight_debit" class="form-label"><strong>Nutriscore debit indicator coefficient for global score</strong></label>
+                                            <input type="number" class="form-control" id="nutriscore_weight_debit" name="nutriscore_weight_debit" min="1" step="1" value="{{config.NUTRISCORE_WEIGHT_DEBIT}}" required>
                                         </div>
+                                    </div>
+                                    <div class="col-sm-4">
                                         <div class="mb-3">
-                                            <label for="nutriscore_weight_diversity" class="form-label">Nutriscore diversity indicator coefficient for global score</label>
-                                            <input type="number" class="form-control" id="nutriscore_weight_diversity" name="nutriscore_weight_diversity" min="1" step="1" value="{{config.NUTRISCORE_WEIGHT_DIVERSITY}}">
+                                            <label for="nutriscore_weight_diversity" class="form-label"><strong>Nutriscore diversity indicator coefficient for global score</strong></label>
+                                            <input type="number" class="form-control" id="nutriscore_weight_diversity" name="nutriscore_weight_diversity" min="1" step="1" value="{{config.NUTRISCORE_WEIGHT_DIVERSITY}}" required>
                                         </div>
+                                    </div>
+                                    <div class="col-sm-4">
                                         <div class="mb-3">
-                                            <label for="nutriscore_sigmoide_slope" class="form-label">Nutriscore sigmoide slope</label>
-                                            <input type="number" class="form-control" id="nutriscore_sigmoide_slope" name="nutriscore_sigmoide_slope" min="0.01" max="1" step="0.01" value="{{config.NUTRISCORE_SIGMOIDE_SLOPE}}">
+                                            <label for="nutriscore_sigmoide_slope" class="form-label"><strong>Nutriscore sigmoide slope</strong></label>
+                                            <input type="number" class="form-control" id="nutriscore_sigmoide_slope" name="nutriscore_sigmoide_slope" min="0.01" max="1" step="0.01" value="{{config.NUTRISCORE_SIGMOIDE_SLOPE}}" required>
                                         </div>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-4">
                                         <div class="mb-3">
-                                            <label for="nutriscore_average_type" class="form-label">Nutriscore global score average type</label>
-                                            <select class="form-select" id="nutriscore_average_type" name="nutriscore_average_type">
+                                            <label for="nutriscore_average_type" class="form-label"><strong>Nutriscore global score average type</strong></label>
+                                            <select class="form-select" id="nutriscore_average_type" name="nutriscore_average_type" required>
                                                 <option value="0" {{"selected" if config.NUTRISCORE_AVERAGE_TYPE != 1}}>Arithmetic</option>
                                                 <option value="1" {{"selected" if config.NUTRISCORE_AVERAGE_TYPE == 1}}>Harmonic</option>
                                             </select>
                                         </div>
-                                        <div class="text-end">
-                                            <button type="submit" class="btn btn-imt-green">Save</button>
-                                        </div>
-                                    </form>
+                                    </div>
+                                    <div class="col-sm-4">
+
+                                    </div>
+                                    <div class="col-sm-4">
+
+                                    </div>
                                 </div>
-                            </div>
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-imt-green">Save</button>
+                                </div>
+                            </form>
                         </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-sm-6">
+                    <div class="row">
                         <div class="col-sm">
                             <div class="card shadow mb-3">
                                 <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
@@ -282,9 +325,13 @@
                         <h5 class="modal-title">Automatic server classification</h5>
                     </div>
                     <div class="modal-body">
-                        <p>This operation can take few minutes...</p>
-                        <div class="d-flex justify-content-center">
-                            <div class="spinner-border text-imt-blue" role="status"></div>
+                        <p class="text-danger">This operation can take few minutes...</p>
+                        <div id="analyticProgressLabel"></div>
+                        <div class="progress">
+                            <div id="progressbar-automatic-classification" class="progress-bar progress-bar-striped progress-bar-animated bg-imt-blue" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="{{ unknownServers|length }}" style="width: 0%"></div>
+                        </div>
+                        <div class="text-end mt-3">
+                            <button type="button" class="btn btn-danger" onclick="stopAnalytics()">Stop</button>
                         </div>
                     </div>
                 </form>
@@ -297,6 +344,19 @@
 <script>
     $('#assignServerService').selectpicker();
     $('#assignServerDNS').selectpicker();
+
+    $(document).ready(function () {
+        $.ajax({
+            url: "get_analytics_running_status",
+            type: "POST",
+            async: false,
+            success: function (response, textStatus, jqXHR) {
+                if (response.length == 2) {
+                    automaticClassification();
+                }
+            }
+        });
+    });
 
     $(document).ready(function() {
         $('#services').DataTable();
@@ -330,6 +390,42 @@
     }
 
     function automaticClassification() {
-        $("#modalAutoClassification").modal('show')
+        $("#modalAutoClassification").modal('show');
+        var intervalId = window.setInterval(function () {
+            $.ajax({
+                url: "get_analytics_running_status",
+                type: "POST",
+                async: false,
+                success: function (response, textStatus, jqXHR) {
+                    if (response.length == 1) {
+                        window.location = window.location.href;
+                    }
+                    else {
+                        document.getElementById('analyticProgressLabel').innerHTML = '<p><strong>Progression : </strong>' + response[0] + '/' + response[1] + '</p>';
+                        document.getElementById('progressbar-automatic-classification').setAttribute('aria-valuenow', response[0]);
+                        document.getElementById('progressbar-automatic-classification').setAttribute('style', 'width:' + Number((parseInt(response[0]) / parseInt(response[1])) * 100) + '%');
+                    }
+                },
+                error: function (err) {
+                    window.location = window.location.href;
+                }
+            });
+        }, 1000);
+    }
+
+    function stopAnalytics() {
+        $.ajax({
+            url: "stop_analytics",
+            type: "POST",
+            async: false,
+            success: function (response, textStatus, jqXHR) {
+                window.location = window.location.href;
+                sleep(1000);
+            },
+            error: function (err) {
+                window.location = window.location.href;
+                sleep(1000);
+            }
+        });
     }
 </script>

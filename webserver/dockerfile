@@ -1,5 +1,12 @@
 FROM python:3.9-alpine
 
+# ENVIRONEMENT VARIABLES
+ENV PW_DB_NAME=Pandore
+ENV PW_DB_HOST=localhost
+ENV PW_DB_PORT=3306
+ENV PW_DB_USER=user
+ENV PW_DB_PASSWORD=user
+
 # CREDITS
 LABEL maintainer="Clement LE GRUIEC <clement.le-gruiec@imt-atlantique.net>"
 LABEL version="1.0"
@@ -14,6 +21,6 @@ COPY ./application /app/application
 WORKDIR /app
 RUN pip install --user -r requirements.txt
 
+# START WEBSERVER
 EXPOSE 5555
-
 CMD ["python3", "/app/runserver.py"]

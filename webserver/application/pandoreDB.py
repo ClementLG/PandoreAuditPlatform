@@ -25,11 +25,11 @@ class PandoreDB:
         self.cursor.callproc('ReadConfiguration')
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                return PandoreConfiguration(int(res[0]), int(res[1]), float(res[2]), int(res[3]), int(res[4]), int(res[5]), int(res[6]), float(res[7]), int(res[8]))
+                return PandoreConfiguration(int(res[0]), int(res[1]), float(res[2]), int(res[3]), int(res[4]), int(res[5]), int(res[6]), float(res[7]), int(res[8]), str(res[9]))
         return None
 
     def update_configuration(self, config: PandoreConfiguration) -> None:
-        self.cursor.callproc('UpdateConfiguration', [config.ANALYTICS_TIMEOUT, config.NUTRISCORE_REFERENCE_FREQUENCY, config.NUTRISCORE_REFERENCE_DEBIT, config.NUTRISCORE_REFERENCE_DIVERSITY, config.NUTRISCORE_WEIGHT_FREQUENCY, config.NUTRISCORE_WEIGHT_DEBIT, config.NUTRISCORE_WEIGHT_DIVERSITY, config.NUTRISCORE_SIGMOIDE_SLOPE, config.NUTRISCORE_AVERAGE_TYPE])
+        self.cursor.callproc('UpdateConfiguration', [config.ANALYTICS_TIMEOUT, config.NUTRISCORE_REFERENCE_FREQUENCY, config.NUTRISCORE_REFERENCE_DEBIT, config.NUTRISCORE_REFERENCE_DIVERSITY, config.NUTRISCORE_WEIGHT_FREQUENCY, config.NUTRISCORE_WEIGHT_DEBIT, config.NUTRISCORE_WEIGHT_DIVERSITY, config.NUTRISCORE_SIGMOIDE_SLOPE, config.NUTRISCORE_AVERAGE_TYPE, config.SNIFFER_API_ADDRESS])
         self.conn.commit()
 
     # Capture

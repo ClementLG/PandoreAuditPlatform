@@ -1,26 +1,82 @@
-from flask import Flask, request, redirect, url_for, render_template, json
+from flask import Flask, request, redirect, url_for, render_template, json, session
 from datetime import datetime
 from application import app, pandoreDB, pandoreException, configuration
-from application.analytics.pandore_analytics import PandoreAnalytics
+from application.pandore_analytics import PandoreAnalytics
 from application.models import *
 import math
+import requests
+
+analytics_running = False
+current_analytic_number = 0
+current_analytic_number_servers = 0
+stop_analytics_running = False
 
 @app.errorhandler(404)
 def page_not_found(e):
     return redirect(url_for('index'))
 
-@app.route('/')
-@app.route('/index')
+@app.route('/', methods = ['POST', 'GET'])
+@app.route('/index', methods = ['POST', 'GET'])
 def index():
     try:
         db = pandoreDB.PandoreDB()
         running_capture = db.get_running_capture()
+        configuration = db.get_configuration()
         db.close_db()
 
         if(running_capture):
             return render_template("index2.html")
         else:
+            if request.method == "POST":
+                if(len(request.values) != 13):
+                    raise pandoreException.PandoreException("Invalid number of arguments")
+                elif len(request.form['capture_name']) <= 0 or len(request.form['capture_name']) > 255:
+                    raise pandoreException.PandoreException("Capture name must contain between 1 and 255 characters")
+                elif len(request.form['capture_description']) <= 0 or len(request.form['capture_description']) > 1000:
+                    raise pandoreException.PandoreException("Capture description must contain between 1 and 1000 characters")
+                elif len(request.form['capture_connection_type']) <= 0 or len(request.form['capture_connection_type']) > 255:
+                    raise pandoreException.PandoreException("Capture connection type must contain between 1 and 255 characters")
+                elif len(request.form['interface_name']) <= 0 or len(request.form['interface_name']) > 255:
+                    raise pandoreException.PandoreException("Interface name must contain between 1 and 255 characters")
+                elif not request.form['capture_duration'].isnumeric():
+                    raise pandoreException.PandoreException("Capture duration must be a number")
+                elif int(request.form['capture_duration']) <= 0:
+                    raise pandoreException.PandoreException("Capture duration must be greater than 0")
+                elif not request.form['ip_w'].isnumeric() or not request.form['ip_x'].isnumeric() or not request.form['ip_y'].isnumeric() or not request.form['ip_z'].isnumeric():
+                    raise pandoreException.PandoreException("Audited device(s) IP must only contain numbers")
+                elif (int(request.form['ip_w']) < 0 or int(request.form['ip_w']) > 255) or (int(request.form['ip_x']) < 0 or int(request.form['ip_x']) > 255) or (int(request.form['ip_y']) < 0 or int(request.form['ip_y']) > 255) or (int(request.form['ip_z']) < 0 or int(request.form['ip_z']) > 255):
+                    raise pandoreException.PandoreException("Invalid IP")
+                elif not request.form['netmask_w'].isnumeric() or not request.form['netmask_x'].isnumeric() or not request.form['netmask_y'].isnumeric() or not request.form['netmask_z'].isnumeric():
+                    raise pandoreException.PandoreException("Audited device(s) netmask must only contain numbers")
+                elif (int(request.form['netmask_w']) < 0 or int(request.form['netmask_w']) > 255) or (int(request.form['netmask_x']) < 0 or int(request.form['netmask_x']) > 255) or (int(request.form['netmask_y']) < 0 or int(request.form['netmask_y']) > 255) or (int(request.form['netmask_z']) < 0 or int(request.form['netmask_z']) > 255):
+                    raise pandoreException.PandoreException("Invalid netmask")
+
+                netmask = sum(bin(int(x)).count('1') for x in (request.form['netmask_w'] + "." + request.form['netmask_x'] + "." + request.form['netmask_y'] + "." + request.form['netmask_z']).split('.'))
+                ip = request.form['ip_w'] + "." + request.form['ip_x'] + "." + request.form['ip_y'] + "." + request.form['ip_z']
+
+                data = {
+                    "capture": {
+                        "CAPTURE_CNX_TYPE": request.form['capture_connection_type'],
+                        "CAPTURE_DESCRIPTION": request.form['capture_description'],
+                        "CAPTURE_DURATION": int(request.form['capture_duration']),
+                        "CAPTURE_NAME": request.form['capture_name']
+                    },
+                    "network": {
+                        "AUDITED_INTERFACE": request.form['interface_name'],
+                        "DEVICE_NETWORK": ip + "/" + str(netmask)
+                    }
+                }
+                requests.post(configuration.SNIFFER_API_ADDRESS + "/configuration", json=data, timeout=10)
+                requests.post(configuration.SNIFFER_API_ADDRESS + "/start", timeout=10)
+
             return render_template("index.html")
+    except pandoreException.PandoreException as e:
+        if db :
+            db.close_db()
+        return render_template(
+            "index.html",
+            error=e
+        )
     except Exception as e:
         try:
             if db :
@@ -422,6 +478,24 @@ def saved_capture(id):
             error=e
         )
 
+@app.route('/get_analytics_running_status', methods = ['POST', 'GET'])
+def get_analytics_running_status():
+    global analytics_running
+    if analytics_running:
+        response = app.response_class(response=json.dumps([str(current_analytic_number), str(current_analytic_number_servers)]),status=200,mimetype='application/json')
+    else:
+        response = app.response_class(response=json.dumps([str(0)]),status=200,mimetype='application/json')
+    return response
+
+@app.route('/stop_analytics', methods = ['POST', 'GET'])
+def stop_analytics():
+    if(request.method == 'POST'):
+        global stop_analytics_running
+        if analytics_running:
+            stop_analytics_running = True
+        response = app.response_class(response=json.dumps(0),status=200,mimetype='application/json')
+        return response
+
 @app.route('/configuration', methods = ['POST', 'GET'])
 def configurations():
     try:
@@ -430,7 +504,6 @@ def configurations():
         services = db.find_all_services()
         dns = db.find_all_dns()
         config = db.get_configuration()
-
         if(request.method == 'POST'):
             if(request.form['actionType'] == 'addService'):
                 if(len(request.values) != 2): raise pandoreException.PandoreException("Invalid number of arguments")
@@ -441,23 +514,35 @@ def configurations():
                 db.update_server(PandoreServer(int(request.form['assignServerID']), request.form['assignServerAddress'], db.find_dns_by_id(int(request.form['assignServerDNS'])), db.find_service_by_id(int(request.form['assignServerService']))))
                 servers = db.find_incomplete_servers()
             elif(request.form['actionType'] == 'autoServerClassification'):
-                serviceKeywords = []
-
-                for service in services:
-                    serviceKeywords.append(PandoreAnalyticsServiceKeywords(service, db.find_all_keyword_by_service(service.ID)))
-
-                analytics = PandoreAnalytics(serviceKeywords)
-                for server in servers:
-                    service = analytics.analyse_ip_dns(config.ANALYTICS_TIMEOUT, server.Address, None if server.DNS is None else server.DNS.Value)
-                    if service:
-                        server.Service = service
-                        db.update_server(server)
-                servers = db.find_incomplete_servers()
+                global analytics_running
+                global current_analytic_number
+                global current_analytic_number_servers
+                global stop_analytics_running
+                if not analytics_running:
+                    analytics_running = True
+                    current_analytic_number = 0
+                    current_analytic_number_servers = len(servers)
+                    serviceKeywords = []
+                    for service in services:
+                        serviceKeywords.append(PandoreAnalyticsServiceKeywords(service, db.find_all_keyword_by_service(service.ID)))
+                    analytics = PandoreAnalytics(serviceKeywords)
+                    for server in servers:
+                        if(stop_analytics_running):
+                            break
+                        service = analytics.analyse_ip_dns(config.ANALYTICS_TIMEOUT, server.Address, None if server.DNS is None else server.DNS.Value)
+                        current_analytic_number += 1
+                        if service:
+                            server.Service = service
+                            db.update_server(server)
+                    analytics_running = False
+                    stop_analytics_running = False
+                    servers = db.find_incomplete_servers()
+                    current_analytic_number = 0
+                    current_analytic_number_servers = 0
             elif(request.form['actionType'] == 'editApplicationConfiguration'):
-                if(len(request.values) != 10): raise pandoreException.PandoreException("Invalid number of arguments")
-                db.update_configuration(PandoreConfiguration(int(request.form['analytics_timeout']), int(request.form['nutriscore_reference_frequency']), float(request.form['nutriscore_reference_debit']), int(request.form['nutriscore_reference_diversity']), int(request.form['nutriscore_weight_frequency']), int(request.form['nutriscore_weight_debit']), int(request.form['nutriscore_weight_diversity']), float(request.form['nutriscore_sigmoide_slope']), int(request.form['nutriscore_average_type'])))
+                if(len(request.values) != 11): raise pandoreException.PandoreException("Invalid number of arguments")
+                db.update_configuration(PandoreConfiguration(int(request.form['analytics_timeout']), int(request.form['nutriscore_reference_frequency']), float(request.form['nutriscore_reference_debit']), int(request.form['nutriscore_reference_diversity']), int(request.form['nutriscore_weight_frequency']), int(request.form['nutriscore_weight_debit']), int(request.form['nutriscore_weight_diversity']), float(request.form['nutriscore_sigmoide_slope']), int(request.form['nutriscore_average_type']), request.form['sniffer_api_address']))
                 config = db.get_configuration()
-
         db.close_db()
 
         return render_template(
@@ -468,6 +553,8 @@ def configurations():
             config = config
         )
     except pandoreException.PandoreException as e:
+        analytics_running = False
+        stop_analytics_running = False
         if db :
             db.close_db()
         return render_template(
@@ -476,6 +563,56 @@ def configurations():
             allServices = services,
             allDNS = dns,
             error = e
+        )
+    except Exception as e:
+        try:
+            analytics_running = False
+            stop_analytics_running = False
+            if db :
+                db.close_db()
+        except:
+            pass
+        return render_template(
+            "error.html",
+            error=e
+        )
+
+@app.route('/sniffer_configuration', methods = ['POST', 'GET'])
+def sniffer_configuration():
+    try:
+        success = None
+        db = pandoreDB.PandoreDB()
+        configuration = db.get_configuration()
+        db.close_db()
+        if request.method == "POST":
+            if(len(request.values) != 5): raise pandoreException.PandoreException("Invalid number of arguments")
+            data = {
+                    "database": {
+                        "DB": request.form['db_name'],
+                        "DB_HOST": request.form['db_host'],
+                        "DB_PASSWORD": request.form['db_password'],
+                        "DB_PORT": int(request.form['db_port']),
+                        "DB_USER": request.form['db_user']
+                    }
+                }
+            requests.post(configuration.SNIFFER_API_ADDRESS + "/configuration", json=data, timeout=10)
+            success = "Sniffer configuration edited successfully"
+        snifferConf = requests.get(configuration.SNIFFER_API_ADDRESS + "/configuration", timeout=10)
+        snifferConfiguration = snifferConf.json()
+        return render_template(
+            "sniffer_configuration.html",
+            snifferConfiguration = snifferConfiguration,
+            snifferAPIConfigurationURL = configuration.SNIFFER_API_ADDRESS + "/configuration",
+            success=success
+        )
+    except pandoreException.PandoreException as e:
+        if db :
+            db.close_db()
+        return render_template(
+            "sniffer_configuration.html",
+            snifferConfiguration = snifferConfiguration,
+            snifferAPIConfigurationURL = configuration.SNIFFER_API_ADDRESS + "/configuration",
+            success=success
         )
     except Exception as e:
         try:
