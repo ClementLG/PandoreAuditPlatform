@@ -3,8 +3,8 @@
 # IMPORTS======================================================================
 
 from flask import Flask, jsonify, request, render_template, Response
-from application.gui import sniffer_gui
-from application.gui.functions import *
+from gui import sniffer_gui
+from gui.functions import *
 
 
 # FLASK ROUTES===================================================================

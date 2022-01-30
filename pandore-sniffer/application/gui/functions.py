@@ -5,8 +5,8 @@
 import asyncio
 import datetime
 from time import sleep
-from application.pandore_sniffer import PandoreSniffer
-from application.pandore_config import PandoreConfig
+from pandore_sniffer import PandoreSniffer
+from pandore_config import PandoreConfig
 import threading
 from multiprocessing import Process
 

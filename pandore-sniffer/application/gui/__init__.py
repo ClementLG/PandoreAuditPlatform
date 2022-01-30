@@ -23,4 +23,4 @@ sniffer_gui.register_blueprint(SWAGGERUI_BLUEPRINT, url_prefix=SWAGGER_URL)
 
 # VIEWS=========================================================================
 
-from application.gui.views import *
+from gui.views import *
