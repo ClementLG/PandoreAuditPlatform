@@ -44,11 +44,11 @@ class PandoreSender:
         self.conn.commit()
 
     def create_capture(self, name, start_time, end_time, description, interface, connection_type):
-        self.cursor.callproc('CreateCapture', [name, start_time, end_time, description, interface, connection_type])
+        self.cursor.callproc('CreateCapture', [name, start_time, end_time, description, interface, connection_type, 10])
         self.conn.commit()
 
     def update_capture(self, id, name, start_time, end_time, description, interface, connection_type):
-        self.cursor.callproc('UpdateCapture', [id, name, start_time, end_time, description, interface, connection_type])
+        self.cursor.callproc('UpdateCapture', [id, name, start_time, end_time, description, interface, connection_type,10])
         self.conn.commit()
 
     def get_capture_id(self, name):
