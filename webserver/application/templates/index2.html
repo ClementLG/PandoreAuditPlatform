@@ -235,7 +235,7 @@
                 success: function (response, textStatus, jqXHR) {
                     if (response.running == "0") {
                         ajaxError = true;
-                        location.reload();
+                        window.location = window.location.href;
                     }
                     else {
                         date = new Date(response.startTime);
@@ -258,7 +258,7 @@
                 },
                 error: function (XMLHttpRequest, textStatus, errorThrown) {
                     ajaxError = true;
-                    location.reload();
+                    window.location = window.location.href;
                 }
             });
         }

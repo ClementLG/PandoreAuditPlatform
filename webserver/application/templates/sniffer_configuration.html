@@ -64,23 +64,23 @@
                             <form method="post">
                                 <div class="mb-3">
                                     <label for="db_host" class="form-label"><strong>Database Host</strong></label>
-                                    <input type="text" class="form-control" id="db_host" name="db_host" value="{{snifferConfiguration['database']['DB_HOST']}}" required>
+                                    <input type="text" class="form-control" id="db_host" name="db_host" value="{{snifferConfiguration['database']['db_host']}}" required>
                                 </div>
                                 <div class="mb-3">
                                     <label for="db_port" class="form-label"><strong>Database Port</strong></label>
-                                    <input type="number" class="form-control" id="db_port" name="db_port" min="1" max="65535" value="{{snifferConfiguration['database']['DB_PORT']}}" required>
+                                    <input type="number" class="form-control" id="db_port" name="db_port" min="1" max="65535" value="{{snifferConfiguration['database']['db_port']}}" required>
                                 </div>
                                 <div class="mb-3">
                                     <label for="db_user" class="form-label"><strong>Database User</strong></label>
-                                    <input type="text" class="form-control" id="db_user" name="db_user" value="{{snifferConfiguration['database']['DB_USER']}}" required>
+                                    <input type="text" class="form-control" id="db_user" name="db_user" value="{{snifferConfiguration['database']['db_user']}}" required>
                                 </div>
                                 <div class="mb-3">
                                     <label for="db_password" class="form-label"><strong>Database Password</strong></label>
-                                    <input type="text" class="form-control" id="db_password" name="db_password" value="{{snifferConfiguration['database']['DB_PASSWORD']}}" required>
+                                    <input type="text" class="form-control" id="db_password" name="db_password" value="{{snifferConfiguration['database']['db_password']}}" required>
                                 </div>
                                 <div class="mb-3">
                                     <label for="db_name" class="form-label"><strong>Database Name</strong></label>
-                                    <input type="text" class="form-control" id="db_name" name="db_name" value="{{snifferConfiguration['database']['DB']}}" required>
+                                    <input type="text" class="form-control" id="db_name" name="db_name" value="{{snifferConfiguration['database']['db']}}" required>
                                 </div>
                                 <div class="text-end">
                                     <button type="submit" class="btn btn-imt-green">Save</button>
