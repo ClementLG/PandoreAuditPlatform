@@ -68,5 +68,14 @@ class PandoreSender:
         self.cursor.callproc('CreateServerString', [ip, None, domain_name])
         self.conn.commit()
 
+    def path_blank_end_time(self, time):
+        self.cursor.execute("SELECT Capture_ID FROM Capture WHERE Capture_EndTime IS NULL ORDER BY Capture_ID DESC;")
+        result = self.cursor.fetchall()
+        if result is not None:
+            self.cursor.callproc('UpdateCaptureEndTime', [result[0][0], time])
+            self.conn.commit()
+            return True
+        return False
+
     def close_db(self):
         self.conn.close()
