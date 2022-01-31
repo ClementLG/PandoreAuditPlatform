@@ -1,11 +1,12 @@
 # PANDORE SNIFFER API - Functions
 
 # IMPORTS======================================================================
-
+import datetime
 import sys
 import mysql.connector
 from pandore_sniffer import PandoreSniffer
 from pandore_config import PandoreConfig
+from pandore_sender import PandoreSender
 import threading
 
 # VARIABLES=====================================================================
@@ -71,12 +72,23 @@ def stop_sniffer_subfunction():
     if len(SNIFFER) > 0:
         if SNIFFER[0].is_alive():
             SNIFFER[0].kill()
-            print("Sniffer killed")
+            print("[INFO] Sniffer killed")
+            db = PandoreSender(
+                CONFIG.get_parameter('database', 'DB_HOST'),
+                CONFIG.get_parameter('database', 'DB_PORT'),
+                CONFIG.get_parameter('database', 'DB_USER'),
+                CONFIG.get_parameter('database', 'DB_PASSWORD'),
+                CONFIG.get_parameter('database', 'DB'))
+            res = db.path_blank_end_time(datetime.datetime.utcnow())
+            if res:
+                print("[INFO] EndTime Blank patched")
+            else:
+                print("[INFO] No EndTime Blank patched or unable to patch")
             SNIFFER.clear()
         else:
             SNIFFER.clear()
     else:
-        print("No sniffer to kill ! Stop playing with the stop button !!")
+        print("[INFO] No sniffer to kill ! Stop playing with the stop button !!")
 
 
 def stop_sniffer_subfunction_old():
