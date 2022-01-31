@@ -44,7 +44,7 @@ class PandoreSniffer:
         print_agent_config()
         self.name = CONFIG.get_parameter('capture', 'CAPTURE_NAME')+str(int(random()*1000000))
         self.duration = int(CONFIG.get_parameter('capture', 'CAPTURE_DURATION'))
-        self.start_time = datetime.datetime.now()
+        self.start_time = datetime.datetime.utcnow()
         self.end_time = None
         self.db = pandore_sender.PandoreSender(
             CONFIG.get_parameter('database', 'DB_HOST'),
@@ -91,7 +91,7 @@ class PandoreSniffer:
             self.capture_id,
             self.name,
             self.start_time,
-            datetime.datetime.now(),
+            datetime.datetime.utcnow(),
             CONFIG.get_parameter('capture', 'CAPTURE_DESCRIPTION'),
             CONFIG.get_parameter('network', 'AUDITED_INTERFACE'),
             CONFIG.get_parameter('capture', 'CAPTURE_CNX_TYPE')
@@ -161,7 +161,7 @@ def pkt_to_json(pkt):
 
         # convert in JSON
         pck_to_json = {
-            "timestamp": datetime.datetime.now().timestamp(),
+            "timestamp": datetime.datetime.utcnow().timestamp(),
             "IP_SRC": pkt.ip.src,
             "IP_DST": pkt.ip.dst,
             "DIRECTION": determine_direction(pkt.ip.src),
