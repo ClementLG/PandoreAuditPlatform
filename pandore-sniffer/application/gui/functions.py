@@ -2,9 +2,7 @@
 
 # IMPORTS======================================================================
 
-import asyncio
-import datetime
-from time import sleep
+import mysql.connector
 from pandore_sniffer import PandoreSniffer
 from pandore_config import PandoreConfig
 import threading
@@ -52,11 +50,17 @@ def start_sniffer_subfunction_thread():
 
 
 def run_sniffer_capture(exit_flag):
-    sniffer = PandoreSniffer()
-    sniffer.run()
-    while True:
-        if exit_flag:
-            sniffer.finish(True)
+    try:
+        sniffer = PandoreSniffer()
+        sniffer.run()
+        while True:
+            if exit_flag:
+                sniffer.finish(True)
+    except mysql.connector.ProgrammingError as err:
+        pass
+    except Exception as e:
+        print("An error occurred ! \n" + str(e))
+
 
 
 def start_sniffer_subfunction_old():
@@ -92,5 +96,7 @@ def get_status():
     if SNIFFER and len(SNIFFER) > 0:
         if SNIFFER[0].is_alive():
             return 'sniffer is running'
+        else:
+            return 'sniffer is stopped'
     else:
         return 'sniffer is stopped'
