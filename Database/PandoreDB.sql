@@ -150,12 +150,12 @@ END//
 CREATE PROCEDURE ReadServiceKeywordByService(IN Service INT)
 BEGIN
 	SELECT * FROM Service_Keyword WHERE ServiceKeyword_Service = Service;
-END;
+END//
 
 CREATE PROCEDURE DeleteServiceKeywordByID(IN ID INT)
 BEGIN
 	DELETE FROM Service_Keyword WHERE ServiceKeyword_ID = ID;
-END;
+END//
 
 /*Stored procedures for table Server*/
 CREATE PROCEDURE CreateServer(IN Address VARCHAR(1000), IN Service INT, IN DNS INT)
