@@ -32,17 +32,18 @@ CONFIG = PandoreConfig('pandore_config.ini')
 # DNS sniffed dictionary
 DNS = {}
 
+
 # CONFIG.get_parameter('capture', 'CAPTURE_CNX_TYPE')
 
 # CLASS=========================================================================
 
 class PandoreSniffer:
-    def __init__(self, filename='pandore_config.ini', stop_thread=False):
+    def __init__(self, filename='pandore_config.ini'):
         CONFIG = PandoreConfig(filename)
         update_variable_docker()
         print_project_info()
         print_agent_config()
-        self.name = CONFIG.get_parameter('capture', 'CAPTURE_NAME')+str(int(random()*1000000))
+        self.name = CONFIG.get_parameter('capture', 'CAPTURE_NAME') + str(int(random() * 1000000))
         self.duration = int(CONFIG.get_parameter('capture', 'CAPTURE_DURATION'))
         self.start_time = datetime.datetime.utcnow()
         self.end_time = None
@@ -83,9 +84,13 @@ class PandoreSniffer:
             print("\nEnd of the capture !")
         except Exception as e:
             self.running = False
+            try:
+                self.finish()
+            except:
+                pass
             print("An error occurred ! \n" + e)
 
-    def finish(self, thread=False):
+    def finish(self):
         self.running = False
         self.db.update_capture(
             self.capture_id,
@@ -97,8 +102,6 @@ class PandoreSniffer:
             CONFIG.get_parameter('capture', 'CAPTURE_CNX_TYPE')
         )
         self.db.close_db()
-        if thread:
-            raise asyncio.exceptions.TimeoutError
 
     def pkt_to_db(self, pkt):
         try:
