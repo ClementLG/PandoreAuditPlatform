@@ -3,13 +3,14 @@ from datetime import datetime
 from application import app, pandoreDB, pandoreException, configuration
 from application.pandore_analytics import PandoreAnalytics
 from application.models import *
-import math
-import requests
+import requests, time, math
 
 analytics_running = False
 current_analytic_number = 0
 current_analytic_number_servers = 0
 stop_analytics_running = False
+
+PandoreAnalyticsRunner = PandoreAnalytics()
 
 @app.errorhandler(404)
 def page_not_found(e):
@@ -25,6 +26,9 @@ def index():
         db.close_db()
 
         if(running_capture):
+            if request.method == "POST":
+                requests.post(configuration.SNIFFER_API_ADDRESS + "/stop", timeout=10)
+                return render_template("index.html")
             return render_template("index2.html")
         else:
             if request.method == "POST":
@@ -50,10 +54,8 @@ def index():
                     raise pandoreException.PandoreException("Audited device(s) netmask must only contain numbers")
                 elif (int(request.form['netmask_w']) < 0 or int(request.form['netmask_w']) > 255) or (int(request.form['netmask_x']) < 0 or int(request.form['netmask_x']) > 255) or (int(request.form['netmask_y']) < 0 or int(request.form['netmask_y']) > 255) or (int(request.form['netmask_z']) < 0 or int(request.form['netmask_z']) > 255):
                     raise pandoreException.PandoreException("Invalid netmask")
-
                 netmask = sum(bin(int(x)).count('1') for x in (request.form['netmask_w'] + "." + request.form['netmask_x'] + "." + request.form['netmask_y'] + "." + request.form['netmask_z']).split('.'))
                 ip = request.form['ip_w'] + "." + request.form['ip_x'] + "." + request.form['ip_y'] + "." + request.form['ip_z']
-
                 data = {
                     "capture": {
                         "CAPTURE_CNX_TYPE": request.form['capture_connection_type'],
@@ -480,9 +482,9 @@ def saved_capture(id):
 
 @app.route('/get_analytics_running_status', methods = ['POST', 'GET'])
 def get_analytics_running_status():
-    global analytics_running
-    if analytics_running:
-        response = app.response_class(response=json.dumps([str(current_analytic_number), str(current_analytic_number_servers)]),status=200,mimetype='application/json')
+    global PandoreAnalyticsRunner
+    if PandoreAnalyticsRunner.isAnalyticsRunning():
+        response = app.response_class(response=json.dumps([str(PandoreAnalyticsRunner.getNumberOfProcessedServers()), str(PandoreAnalyticsRunner.getNumberOfUnknownServers())]),status=200,mimetype='application/json')
     else:
         response = app.response_class(response=json.dumps([str(0)]),status=200,mimetype='application/json')
     return response
@@ -490,9 +492,9 @@ def get_analytics_running_status():
 @app.route('/stop_analytics', methods = ['POST', 'GET'])
 def stop_analytics():
     if(request.method == 'POST'):
-        global stop_analytics_running
-        if analytics_running:
-            stop_analytics_running = True
+        global PandoreAnalyticsRunner
+        if PandoreAnalyticsRunner.isAnalyticsRunning():
+            PandoreAnalyticsRunner.stop_analytics()
         response = app.response_class(response=json.dumps(0),status=200,mimetype='application/json')
         return response
 
@@ -514,31 +516,12 @@ def configurations():
                 db.update_server(PandoreServer(int(request.form['assignServerID']), request.form['assignServerAddress'], db.find_dns_by_id(int(request.form['assignServerDNS'])), db.find_service_by_id(int(request.form['assignServerService']))))
                 servers = db.find_incomplete_servers()
             elif(request.form['actionType'] == 'autoServerClassification'):
-                global analytics_running
-                global current_analytic_number
-                global current_analytic_number_servers
-                global stop_analytics_running
-                if not analytics_running:
-                    analytics_running = True
-                    current_analytic_number = 0
-                    current_analytic_number_servers = len(servers)
+                global PandoreAnalyticsRunner
+                if not PandoreAnalyticsRunner.isAnalyticsRunning():
                     serviceKeywords = []
                     for service in services:
                         serviceKeywords.append(PandoreAnalyticsServiceKeywords(service, db.find_all_keyword_by_service(service.ID)))
-                    analytics = PandoreAnalytics(serviceKeywords)
-                    for server in servers:
-                        if(stop_analytics_running):
-                            break
-                        service = analytics.analyse_ip_dns(config.ANALYTICS_TIMEOUT, server.Address, None if server.DNS is None else server.DNS.Value)
-                        current_analytic_number += 1
-                        if service:
-                            server.Service = service
-                            db.update_server(server)
-                    analytics_running = False
-                    stop_analytics_running = False
-                    servers = db.find_incomplete_servers()
-                    current_analytic_number = 0
-                    current_analytic_number_servers = 0
+                    PandoreAnalyticsRunner.run_analytics(servers, serviceKeywords, config.ANALYTICS_TIMEOUT)
             elif(request.form['actionType'] == 'editApplicationConfiguration'):
                 if(len(request.values) != 11): raise pandoreException.PandoreException("Invalid number of arguments")
                 db.update_configuration(PandoreConfiguration(int(request.form['analytics_timeout']), int(request.form['nutriscore_reference_frequency']), float(request.form['nutriscore_reference_debit']), int(request.form['nutriscore_reference_diversity']), int(request.form['nutriscore_weight_frequency']), int(request.form['nutriscore_weight_debit']), int(request.form['nutriscore_weight_diversity']), float(request.form['nutriscore_sigmoide_slope']), int(request.form['nutriscore_average_type']), request.form['sniffer_api_address']))
@@ -553,8 +536,7 @@ def configurations():
             config = config
         )
     except pandoreException.PandoreException as e:
-        analytics_running = False
-        stop_analytics_running = False
+        PandoreAnalyticsRunner.stop_analytics()
         if db :
             db.close_db()
         return render_template(
@@ -566,8 +548,7 @@ def configurations():
         )
     except Exception as e:
         try:
-            analytics_running = False
-            stop_analytics_running = False
+            PandoreAnalyticsRunner.stop_analytics()
             if db :
                 db.close_db()
         except:

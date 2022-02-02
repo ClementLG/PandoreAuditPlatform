@@ -1,95 +1,127 @@
-# PANDORE ANALYTICS
-
-
-# IMPORTS======================================================================
-
-from ipwhois import IPWhois  # IP
-from whois import whois  # DomainName
-import socket # DomainName
-import multiprocessing # thread
-import ipaddress
-from multiprocessing import Queue
-from application import configuration
+import multiprocessing, ipaddress, threading, socket, time
+from ipwhois import IPWhois
+from whois import whois
+from multiprocessing import Queue, Value
+from application import pandoreDB, configuration
 from application.models import *
-
-
-# VARIABLES=====================================================================
-
-# CLASS=========================================================================
+from application.pandore_analytics_running_configuration import PandoreAnalyticsRunningConfiguration
+from threading import Event
 
 class PandoreAnalytics:
 
-    dictionary: list[PandoreAnalyticsServiceKeywords]
+    __runningConfiguration: PandoreAnalyticsRunningConfiguration
 
-    def __init__(self, dictionary = list[PandoreAnalyticsServiceKeywords]):
-        self.dictionary = dictionary
+    def __init__(self):
+        self.__runningConfiguration = None
         print("Pandore analytics is running")
 
-    def analyse_ip_dns(self, timeout: int, ip, dns=None):
+    def run_analytics(self, unknownServers: list[PandoreServer], dictionary: list[PandoreAnalyticsServiceKeywords], analyticsTimeout: int):
+        try:
+            self.__runningConfiguration = PandoreAnalyticsRunningConfiguration(len(unknownServers), dictionary)
+            numberOfThreads = multiprocessing.cpu_count()
+            splittedUnknownServers = list(self.__split_list(unknownServers, numberOfThreads))
+            threads = []
+            for i in range(numberOfThreads):
+                t = threading.Thread(target=self.__analytics_worker_thread, args=(splittedUnknownServers[i], self.__runningConfiguration, analyticsTimeout,))
+                threads.append(t)
+                t.start()
+            for thread in threads:
+                thread.join()
+            self.__runningConfiguration = None
+        except Exception as e:
+            if threads:
+                for thread in threads:
+                    thread.kill()
+            self.__runningConfiguration = None
 
-        # Check for private adresses
-        if (ipaddress.ip_address(ip).is_private):
-            print("Str 0 - Service found for " + ip + " : Intranet service")
-            for val in self.dictionary:
-                if val.Service.Name == "Intranet service":
-                    return val.Service
+    def stop_analytics(self):
+        if self.isAnalyticsRunning():
+            self.__runningConfiguration.setStopAnalytics()
+            while self.isAnalyticsRunning(): 
+                time.sleep(0.5)
             return None
 
-        if dns:
-            # 1st try to parse the dns
-            for val in self.dictionary:
-                for keyword in val.Keywords:
-                    if(keyword.Value in dns):
-                        print("Str 1 - Service found for " + dns + " : " + val.Service.Name)
-                        return val.Service
+    def isAnalyticsRunning(self) -> bool:
+        return self.__runningConfiguration is not None
 
-        queue = Queue()
-        thread = multiprocessing.Process(target=self.process_analyse_ip_dns, args=(queue, ip, dns,))
-        thread.start()
-        thread.join(timeout)
+    def getNumberOfUnknownServers(self) -> int:
+        if not self.isAnalyticsRunning():
+            return 0
+        else:
+            return self.__runningConfiguration.getNumberOfUnknownServers()
 
-        if thread.is_alive():
-            print("Timeout for ip = " + ip)
-            thread.terminate()
-            thread.join()
-            return None
-        
-        return queue.get()
+    def getNumberOfProcessedServers(self) -> int:
+        if not self.isAnalyticsRunning():
+            return 0
+        else:
+            return self.__runningConfiguration.getNumberOfProcessedServers()
 
-    def process_analyse_ip_dns(self, queue, ip, dns=None):
-        if dns is not None:
-            # 2nd to find the service using the DNS lookup
+    def __analytics_worker_thread(self, unknownServers: list[PandoreServer], configuration: PandoreAnalyticsRunningConfiguration, analyticsTimeout: int):
+        for server in unknownServers:
             try:
-                dns_info = whois(dns)
-                for val in self.dictionary:
-                    for keyword in val.Keywords:
-                        if(keyword.Value in dns_info["org"].lower()):
-                            print("Str 2 - Service found for " + dns + " : " + val.Service.Name)
-                            queue.put(val.Service)
-            except:
-                pass
+                if(configuration.getStopAnalytics()): break
+                service = None
 
-        # 3rd try a reverse DNS lookup
-        try:
-            socket.setdefaulttimeout(3)
-            host_info = socket.gethostbyaddr(ip)
-            for val in self.dictionary:
-                for keyword in val.Keywords:
-                    if(keyword.Value in host_info[0].lower()):
-                        print("Str 3 - Service found for " + ip + " : " +  val.Service.Name)
-                        queue.put(val.Service)
-        except:
-            pass
+                if (ipaddress.ip_address(server.Address).is_private):
+                    print("Str 0 - Service found for " + ip + " : Intranet service")
+                    for val in self.__runningConfiguration.getDicitonary():
+                        if val.Service.Name == "Intranet service":
+                            return val.Service
+                if server.DNS:
+                    for val in self.__runningConfiguration.getDicitonary():
+                        for keyword in val.Keywords:
+                            if(keyword.Value in server.DNS.Value):
+                                print("Str 1 - Service found for " + server.DNS.Value + " : " + val.Service.Name)
+                                return val.Service
 
-        # 4th to find the service using the IP lookup
-        try:
-            ip_info = IPWhois(ip).lookup_rdap()
-            for val in self.dictionary:
-                for keyword in val.Keywords:
-                    if(keyword.Value in ip_info['asn_description'].lower()):
-                        print("Str 4 - Service found for " + ip + " : " +  val.Service.Name)
-                        queue.put(val.Service)
-        except:
-            pass
+                if(configuration.getStopAnalytics()): break
 
-        queue.put(None)
+                if server.DNS is not None:
+                    try:
+                        dns_info = whois(server.DNS.Value)
+                        for val in self.__runningConfiguration.getDicitonary():
+                            for keyword in val.Keywords:
+                                if(keyword.Value in dns_info["org"].lower()):
+                                    print("Str 2 - Service found for " + server.DNS.Value + " : " + val.Service.Name)
+                                    return val.Service
+                    except Exception as e:
+                        pass
+
+                if(configuration.getStopAnalytics()): break
+
+                try:
+                    socket.setdefaulttimeout(3)
+                    host_info = socket.gethostbyaddr(server.Address)
+                    for val in self.__runningConfiguration.getDicitonary():
+                        for keyword in val.Keywords:
+                            if(keyword.Value in host_info[0].lower()):
+                                print("Str 3 - Service found for " + ip + " : " +  val.Service.Name)
+                                return val.Service
+                except Exception as e:
+                    pass
+
+                if(configuration.getStopAnalytics()): break
+
+                try:
+                    ip_info = IPWhois(server.Address).lookup_rdap()
+                    for val in self.__runningConfiguration.getDicitonary():
+                        for keyword in val.Keywords:
+                            if(keyword.Value in ip_info['asn_description'].lower()):
+                                print("Str 4 - Service found for " + ip + " : " +  val.Service.Name)
+                                return val.Service
+                except Exception as e:
+                    pass
+
+                configuration.incrementNumberOfProcessedServers()
+                if service:
+                    db = pandoreDB.PandoreDB()
+                    server.Service = service
+                    db.update_server(server)
+                    db.close_db()
+            except Exception as e:
+                if db:
+                    db.close_db()
+
+    def __split_list(self, list, n):
+        k, m = divmod(len(list), n)
+        return (list[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(n))

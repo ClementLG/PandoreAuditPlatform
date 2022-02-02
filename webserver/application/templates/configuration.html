@@ -320,11 +320,11 @@
     <div class="modal fade" id="modalAutoClassification" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <form method="post">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Automatic server classification</h5>
-                    </div>
-                    <div class="modal-body">
+                <div class="modal-header">
+                    <h5 class="modal-title">Automatic server classification</h5>
+                </div>
+                <div class="modal-body">
+                    <div id="classificationRunning">
                         <p class="text-danger">This operation can take few minutes...</p>
                         <div id="analyticProgressLabel"></div>
                         <div class="progress">
@@ -334,7 +334,13 @@
                             <button type="button" class="btn btn-danger" onclick="stopAnalytics()">Stop</button>
                         </div>
                     </div>
-                </form>
+                    <div id="classificationStopping" style="display:none;">
+                        <p class="text-danger">Automatic classification is stopping...</p>
+                        <div class="spinner-border text-imt" role="status">
+                            <span class="visually-hidden"></span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -344,6 +350,12 @@
 <script>
     $('#assignServerService').selectpicker();
     $('#assignServerDNS').selectpicker();
+
+    stopRefreshAnalytics = false;
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
 
     $(document).ready(function () {
         $.ajax({
@@ -392,39 +404,44 @@
     function automaticClassification() {
         $("#modalAutoClassification").modal('show');
         var intervalId = window.setInterval(function () {
-            $.ajax({
-                url: "get_analytics_running_status",
-                type: "POST",
-                async: false,
-                success: function (response, textStatus, jqXHR) {
-                    if (response.length == 1) {
+            if (!stopRefreshAnalytics)
+            {
+                $.ajax({
+                    url: "get_analytics_running_status",
+                    type: "POST",
+                    async: false,
+                    success: function (response, textStatus, jqXHR) {
+                        if (response.length == 1) {
+                            window.location = window.location.href;
+                        }
+                        else {
+                            document.getElementById('analyticProgressLabel').innerHTML = '<p><strong>Progression : </strong>' + response[0] + '/' + response[1] + '</p>';
+                            document.getElementById('progressbar-automatic-classification').setAttribute('aria-valuenow', response[0]);
+                            document.getElementById('progressbar-automatic-classification').setAttribute('style', 'width:' + Number((parseInt(response[0]) / parseInt(response[1])) * 100) + '%');
+                        }
+                    },
+                    error: function (err) {
                         window.location = window.location.href;
                     }
-                    else {
-                        document.getElementById('analyticProgressLabel').innerHTML = '<p><strong>Progression : </strong>' + response[0] + '/' + response[1] + '</p>';
-                        document.getElementById('progressbar-automatic-classification').setAttribute('aria-valuenow', response[0]);
-                        document.getElementById('progressbar-automatic-classification').setAttribute('style', 'width:' + Number((parseInt(response[0]) / parseInt(response[1])) * 100) + '%');
-                    }
-                },
-                error: function (err) {
-                    window.location = window.location.href;
-                }
-            });
+                });
+            }       
         }, 1000);
     }
 
     function stopAnalytics() {
+        stopRefreshAnalytics = true;
+        document.getElementById('classificationRunning').style.display = 'none';
+        document.getElementById('classificationStopping').style.display = 'block';
+        //sleep(1000);
         $.ajax({
             url: "stop_analytics",
             type: "POST",
             async: false,
             success: function (response, textStatus, jqXHR) {
                 window.location = window.location.href;
-                sleep(1000);
             },
             error: function (err) {
                 window.location = window.location.href;
-                sleep(1000);
             }
         });
     }
