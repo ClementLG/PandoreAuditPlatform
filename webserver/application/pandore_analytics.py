@@ -29,9 +29,8 @@ class PandoreAnalytics:
                 thread.join()
             self.__runningConfiguration = None
         except Exception as e:
-            if threads:
-                for thread in threads:
-                    thread.kill()
+            print(str(e))
+            self.stop_analytics()
             self.__runningConfiguration = None
 
     def stop_analytics(self):
@@ -72,7 +71,7 @@ class PandoreAnalytics:
                         for keyword in val.Keywords:
                             if(keyword.Value in server.DNS.Value):
                                 print("Str 1 - Service found for " + server.DNS.Value + " : " + val.Service.Name)
-                                return val.Service
+                                service = val.Service
 
                 if(configuration.getStopAnalytics()): break
 
@@ -83,7 +82,7 @@ class PandoreAnalytics:
                             for keyword in val.Keywords:
                                 if(keyword.Value in dns_info["org"].lower()):
                                     print("Str 2 - Service found for " + server.DNS.Value + " : " + val.Service.Name)
-                                    return val.Service
+                                    service = val.Service
                     except Exception as e:
                         pass
 
@@ -96,7 +95,7 @@ class PandoreAnalytics:
                         for keyword in val.Keywords:
                             if(keyword.Value in host_info[0].lower()):
                                 print("Str 3 - Service found for " + ip + " : " +  val.Service.Name)
-                                return val.Service
+                                service = val.Service
                 except Exception as e:
                     pass
 
@@ -108,7 +107,7 @@ class PandoreAnalytics:
                         for keyword in val.Keywords:
                             if(keyword.Value in ip_info['asn_description'].lower()):
                                 print("Str 4 - Service found for " + ip + " : " +  val.Service.Name)
-                                return val.Service
+                                service = val.Service
                 except Exception as e:
                     pass
 
@@ -119,7 +118,7 @@ class PandoreAnalytics:
                     db.update_server(server)
                     db.close_db()
             except Exception as e:
-                if db:
+                if 'db' in locals():
                     db.close_db()
 
     def __split_list(self, list, n):
