@@ -51,9 +51,15 @@ def start_sniffer_subfunction_thread():
 
 def start_sniffer_subfunction_thread_V2():
     try:
-        kth = KThread(target=run_sniffer_capture)
-        SNIFFER.append(kth)
-        SNIFFER[0].start()
+        if len(SNIFFER) > 0:
+            if not SNIFFER[0].is_alive():
+                SNIFFER.clear()
+            else:
+                print("[INFO] A thread is already running !")
+        if len(SNIFFER) == 0:
+            kth = KThread(target=run_sniffer_capture)
+            SNIFFER.append(kth)
+            SNIFFER[0].start()
     except Exception as e:
         print("An error occurred ! \n" + str(e))
 
