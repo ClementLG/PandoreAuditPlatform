@@ -50,8 +50,11 @@ class PandoreSender:
         return self.get_capture_id(name, start_time, end_time, description, interface, connection_type)
 
     def update_capture(self, id, name, start_time, end_time, description, interface, connection_type):
-        self.cursor.callproc('UpdateCapture',
-                             [id, name, start_time, end_time, description, interface, connection_type, 10])
+        self.cursor.callproc('UpdateCapture', [id, name, start_time, end_time, description, interface, connection_type, 10])
+        self.conn.commit()
+
+    def update_capture_end_time(self, time, capture_id):
+        self.cursor.callproc('UpdateCaptureEndTime', [capture_id, time])
         self.conn.commit()
 
     def get_capture_id(self, name, start_time, end_time, description, interface, connection_type):

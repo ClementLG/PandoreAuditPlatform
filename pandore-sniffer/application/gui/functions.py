@@ -114,6 +114,30 @@ def clean_thread_v2():
             del SNIFFERS_ID[d]
 
 
+# Sometime a capture is created but not in the list due to bug
+def clean_bugged_state():
+    bugged = []
+    for t in SNIFFERS_Thread:
+        if t not in SNIFFERS_ID:
+            print("bugged state detected")
+            bugged.append(t)
+    for b in bugged:
+        SNIFFERS_Thread[b].kill()
+        del SNIFFERS_Thread[b]
+        db = PandoreSender(
+            CONFIG.get_parameter('database', 'DB_HOST'),
+            CONFIG.get_parameter('database', 'DB_PORT'),
+            CONFIG.get_parameter('database', 'DB_USER'),
+            CONFIG.get_parameter('database', 'DB_PASSWORD'),
+            CONFIG.get_parameter('database', 'DB'))
+        res = db.path_blank_end_time(datetime.datetime.utcnow())
+        db.close_db()
+        if res:
+            print("patched")
+        else:
+            print("unable to patch")
+
+
 def create_unique_thread_id():
     lim = 3
     i = 0
@@ -167,6 +191,9 @@ def stop_sniffer_subfunction():
 
 def stop_sniffer_subfunction_by_id(capture_id=None):
     t_id = None
+
+    clean_bugged_state()
+
     for key in SNIFFERS_ID:
         if int(SNIFFERS_ID.get(key)) == int(capture_id):
             t_id = key
@@ -181,7 +208,7 @@ def stop_sniffer_subfunction_by_id(capture_id=None):
         SNIFFERS_Thread[t_id].kill()
         db.path_blank_end_time_by_id(datetime.datetime.utcnow(), capture_id)
         db.close_db()
-        print("[INFO] Thread " + str(t_id) + " Killed ! (Capture "+str(capture_id)+")")
+        print("[INFO] Thread " + str(t_id) + " Killed ! (Capture " + str(capture_id) + ")")
         del SNIFFERS_Thread[t_id]
         del SNIFFERS_ID[t_id]
     elif len(SNIFFERS_Thread) == 1:
@@ -198,7 +225,7 @@ def stop_sniffer_subfunction_by_id(capture_id=None):
         c_id = SNIFFERS_ID[t_id]
         db.path_blank_end_time_by_id(datetime.datetime.utcnow(), c_id)
         db.close_db()
-        print("[INFO] Thread " + str(t_id) + " Killed ! (Capture "+str(c_id)+")")
+        print("[INFO] Thread " + str(t_id) + " Killed ! (Capture " + str(c_id) + ")")
         del SNIFFERS_Thread[t_id]
         del SNIFFERS_ID[t_id]
     else:
@@ -206,6 +233,17 @@ def stop_sniffer_subfunction_by_id(capture_id=None):
 
 
 def get_status():
+    alive = 0
+    dead = 0
+    for st in SNIFFERS_Thread:
+        if SNIFFERS_Thread[st].is_alive():
+            alive += 1
+        else:
+            dead += 1
+    return str(alive) + ' running and ' + str(dead) + ' stopped'
+
+
+def get_status_old():
     if SNIFFER and len(SNIFFER) > 0:
         if SNIFFER[0].is_alive():
             return 'sniffer is running'

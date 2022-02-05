@@ -39,14 +39,20 @@ class PandoreSniffer:
         # Use environment variables if used without API (Standalone)
         if not api:
             self.update_variable_docker()
-        # Displays information in the terminal
-        print_project_info()
-        self.print_agent_config()
-        # Instantiates parameters specific to the capture
+        # Capture parameters
         self.name = self.config.get_parameter('capture', 'CAPTURE_NAME') + '-' + str(int(random() * 1000000))
         self.duration = int(self.config.get_parameter('capture', 'CAPTURE_DURATION'))
         self.start_time = datetime.datetime.utcnow()
         self.end_time = None
+        self.description = self.config.get_parameter('capture', 'CAPTURE_DESCRIPTION')
+        # Network parameters
+        self.device_network = self.config.get_parameter('network', 'DEVICE_NETWORK')
+        self.audited_interface = self.config.get_parameter('network', 'AUDITED_INTERFACE')
+        self.cnx_type = self.config.get_parameter('capture', 'CAPTURE_CNX_TYPE')
+        self.custom_filter = self.config.get_parameter('network', 'CUSTOM_FILTER')
+        # Displays information in the terminal
+        print_project_info()
+        self.print_agent_config()
         # Initiates the connection to the db
         self.db = pandore_sender.PandoreSender(
             self.config.get_parameter('database', 'DB_HOST'),
@@ -60,19 +66,19 @@ class PandoreSniffer:
             self.name,
             self.start_time,
             self.end_time,
-            self.config.get_parameter('capture', 'CAPTURE_DESCRIPTION'),
-            self.config.get_parameter('network', 'AUDITED_INTERFACE'),
-            self.config.get_parameter('capture', 'CAPTURE_CNX_TYPE')
+            self.description,
+            self.audited_interface,
+            self.cnx_type
         )
         # Setting up the sniffer tool
         self.cap = pyshark.LiveCapture(
-            interface=self.config.get_parameter('network', 'AUDITED_INTERFACE'),
+            interface=self.audited_interface,
             bpf_filter="( dst net " +
-                       str(self.config.get_parameter('network', 'DEVICE_NETWORK'))
+                       str(self.device_network)
                        + " or src net "
-                       + str(self.config.get_parameter('network', 'DEVICE_NETWORK'))
+                       + str(self.device_network)
                        + " ) and "
-                       + "( " + self.config.get_parameter('network', 'CUSTOM_FILTER')
+                       + "( " + str(self.custom_filter)
                        + " )")
         # Create a buffer to avoid unnecessary requests to the db
         self.dns_buffer = {}
@@ -92,15 +98,7 @@ class PandoreSniffer:
             print("An error occurred ! \n" + e)
 
     def finish(self):
-        self.db.update_capture(
-            self.capture_id,
-            self.name,
-            self.start_time,
-            datetime.datetime.utcnow(),
-            self.config.get_parameter('capture', 'CAPTURE_DESCRIPTION'),
-            self.config.get_parameter('network', 'AUDITED_INTERFACE'),
-            self.config.get_parameter('capture', 'CAPTURE_CNX_TYPE')
-        )
+        self.db.update_capture_end_time(datetime.datetime.utcnow(), self.capture_id)
         self.db.close_db()
 
     def get_id(self):
@@ -109,7 +107,7 @@ class PandoreSniffer:
     def pkt_to_db(self, pkt):
         try:
             # console output
-            print(pkt_to_json(pkt, self.config.get_parameter('network', 'DEVICE_NETWORK')))
+            print(pkt_to_json(pkt, self.device_network))
 
             # refactor protocol name
             try:
@@ -133,9 +131,9 @@ class PandoreSniffer:
             try:
                 self.db.create_request_string(
                     int(pkt.length),
-                    determine_direction(pkt.ip.src,self.config.get_parameter('network','DEVICE_NETWORK')),
+                    determine_direction(pkt.ip.src, self.device_network),
                     highest_layer_protocol,
-                    determine_ip_saved(pkt.ip.src.show, pkt.ip.dst.show, self.config.get_parameter('network','DEVICE_NETWORK')),
+                    determine_ip_saved(pkt.ip.src.show, pkt.ip.dst.show, self.device_network),
                     self.check_dns_dictionary(pkt.ip.dst.show),
                     self.capture_id
                 )
@@ -186,10 +184,10 @@ class PandoreSniffer:
         print('# ' + '=' * 50)
         print(' CONFIG')
         print('# ' + '=' * 50)
-        print('Audited interface: ' + self.config.get_parameter('network', 'AUDITED_INTERFACE'))
-        print('Device network: ' + self.config.get_parameter('network', 'DEVICE_NETWORK'))
+        print('Audited interface: ' + str(self.audited_interface))
+        print('Device network: ' + str(self.device_network))
         start_time = datetime.datetime.now()
-        end_time = start_time + datetime.timedelta(seconds=int(self.config.get_parameter('capture', 'CAPTURE_DURATION')))
+        end_time = start_time + datetime.timedelta(seconds=int(self.duration))
         print("Start time: " + str(start_time.strftime("%d/%m/%Y - %H:%M:%S")))
         print("Expected end time: " + str(end_time.strftime("%d/%m/%Y - %H:%M:%S")))
         print('# ' + '=' * 50)
