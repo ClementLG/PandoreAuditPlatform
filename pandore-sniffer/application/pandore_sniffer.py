@@ -103,6 +103,9 @@ class PandoreSniffer:
         )
         self.db.close_db()
 
+    def get_id(self):
+        return self.capture_id
+
     def pkt_to_db(self, pkt):
         try:
             # console output

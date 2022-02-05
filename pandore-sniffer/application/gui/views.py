@@ -30,14 +30,21 @@ def config_post():
 
 @sniffer_gui.route("/api/start", methods=["POST"])
 def start_sniffer():
-    start_sniffer_subfunction_thread_V2()
+    start_sniffer_subfunction_thread_v3()
     return jsonify('Start OK')
 
 
 @sniffer_gui.route("/api/stop", methods=["POST"])
 def stop_sniffer():
-    stop_sniffer_subfunction()
-    return jsonify('Stop OK')
+    request_data = request.get_json()
+    if request_data is not None:
+        if 'CaptureID' in request_data:
+            stop_sniffer_subfunction_by_id(request_data['CaptureID'])
+            return jsonify('Stop OK')
+    else:
+        stop_sniffer_subfunction_by_id()
+        return jsonify('Stop OK')
+    return jsonify('Stop KO')
 
 
 @sniffer_gui.route("/api/status", methods=["GET"])

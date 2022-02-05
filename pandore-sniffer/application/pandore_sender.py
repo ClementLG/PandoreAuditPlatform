@@ -82,6 +82,10 @@ class PandoreSender:
             return True
         return False
 
+    def path_blank_end_time_by_id(self, time, capture_id):
+        self.cursor.callproc('UpdateCaptureEndTime', [capture_id, time])
+        self.conn.commit()
+
     def hour_rounder(self, t):
         return t.replace(microsecond=0)
 

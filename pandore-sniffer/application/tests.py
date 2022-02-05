@@ -30,3 +30,7 @@ for sect in config.sections():
     dest[sect] = dict(config.items(sect))
 
 print(dest)
+
+
+def hour_rounder(t):
+    return (t.replace(microsecond=0))

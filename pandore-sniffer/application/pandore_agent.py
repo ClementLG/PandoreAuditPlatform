@@ -24,6 +24,9 @@ CONFIG = PandoreConfig('pandore_config.ini')
 
 # MAIN=========================================================================
 
+if os.environ.get('PANDORE_SNIFFER_GUI') is not None:
+    CONFIG.update_parameter('gui', 'SNIFFER_GUI', str(os.environ.get('PANDORE_SNIFFER_GUI')))
+
 if CONFIG.get_parameter('gui', 'sniffer_gui') == 'True':
     os.system('python pandore_api.py')
 else:
