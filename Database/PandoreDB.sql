@@ -173,6 +173,9 @@ BEGIN
 		SET @NBSERV = (SELECT COUNT(*) FROM Server WHERE LOWER(Server_Address) = LOWER(Address));
 		IF(@NBSERV = 0)THEN
 			INSERT INTO Server (Server_Address, Server_Service, Server_DNS) VALUES (Address, Service, (SELECT DNS_ID FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS)));
+		ELSE
+			SET @SERV_ID = (SELECT Server_ID FROM Server WHERE LOWER(Server_Address) = LOWER(Address));
+			CALL UpdateServer(@SERV_ID, Address, Service, (SELECT DNS_ID FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS)));
 		END IF;
 	ELSE
 		SET @NBSERV = (SELECT COUNT(*) FROM Server WHERE LOWER(Server_Address) = LOWER(Address));
