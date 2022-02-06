@@ -126,6 +126,13 @@ class PandoreSniffer:
                     self.dns_to_db(temp_dns, temp_ips)
             except:
                 pass
+            # Sniff tls.handshake.extensions_server_name to get ip:domain_name assoc
+            try:
+                if pkt.tls.handshake_extensions_server_name:
+                    temp_sn, temp_ip = self.sniff_tls_info(pkt)
+                    self.dns_to_db(temp_sn, temp_ip)
+            except:
+                pass
 
             # ADD packet in the DB
             try:
@@ -180,6 +187,18 @@ class PandoreSniffer:
         except:
             pass
 
+    def sniff_tls_info(self, pkt):
+        try:
+            handshake_extensions_server_name = pkt.tls.handshake_extensions_server_name.show
+            if determine_direction(pkt.ip.src, self.device_network) == "1":
+                ip_assoc = [pkt.ip.dst]
+            else:
+                ip_assoc = [pkt.ip.src]
+            self.populate_dns_dictionary(handshake_extensions_server_name, ip_assoc)
+            return handshake_extensions_server_name, ip_assoc
+        except:
+            pass
+
     def print_agent_config(self):
         print('# ' + '=' * 50)
         print(' CONFIG')
@@ -194,7 +213,8 @@ class PandoreSniffer:
 
     def update_variable_docker(self):
         if os.environ.get('PANDORE_AUDITED_INTERFACE') is not None:
-            self.config.update_parameter('network', 'AUDITED_INTERFACE', str(os.environ.get('PANDORE_AUDITED_INTERFACE')))
+            self.config.update_parameter('network', 'AUDITED_INTERFACE',
+                                         str(os.environ.get('PANDORE_AUDITED_INTERFACE')))
         if os.environ.get('PANDORE_DEVICE_NETWORK') is not None:
             self.config.update_parameter('network', 'DEVICE_NETWORK', str(os.environ.get('PANDORE_DEVICE_NETWORK')))
         if os.environ.get('PANDORE_CUSTOM_FILTER') is not None:
@@ -215,7 +235,7 @@ class PandoreSniffer:
             self.config.update_parameter('capture', 'CAPTURE_DURATION', str(os.environ.get('PANDORE_CAPTURE_DURATION')))
         if os.environ.get('PANDORE_CAPTURE_DESCRIPTION') is not None:
             self.config.update_parameter('capture', 'CAPTURE_DESCRIPTION',
-                                    str(os.environ.get('PANDORE_CAPTURE_DESCRIPTION')))
+                                         str(os.environ.get('PANDORE_CAPTURE_DESCRIPTION')))
         if os.environ.get('PANDORE_CAPTURE_CNX_TYPE') is not None:
             self.config.update_parameter('capture', 'CAPTURE_CNX_TYPE', str(os.environ.get('PANDORE_CAPTURE_CNX_TYPE')))
         if os.environ.get('PANDORE_SNIFFER_GUI') is not None:
@@ -282,8 +302,10 @@ def out_dns_layer_field(ip_layer_field, output_type):
 
 def determine_direction(src_ip, network):
     if ipaddress.ip_address(src_ip) in ipaddress.ip_network(network):
+        # upload
         return "1"
     else:
+        # download
         return "0"
 
 
