@@ -170,9 +170,15 @@ BEGIN
 		IF(@DNS = 0)THEN
 			CALL CreateDNS(DNS);
 		END IF;
-		INSERT INTO Server (Server_Address, Server_Service, Server_DNS) VALUES (Address, Service, (SELECT DNS_ID FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS)));
+		SET @NBSERV = (SELECT COUNT(*) FROM Server WHERE LOWER(Server_Address) = LOWER(Address));
+		IF(@NBSERV = 0)THEN
+			INSERT INTO Server (Server_Address, Server_Service, Server_DNS) VALUES (Address, Service, (SELECT DNS_ID FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS)));
+		END IF;
 	ELSE
-		INSERT INTO Server (Server_Address, Server_Service, Server_DNS) VALUES (Address, Service, NULL);
+		SET @NBSERV = (SELECT COUNT(*) FROM Server WHERE LOWER(Server_Address) = LOWER(Address));
+		IF(@NBSERV = 0)THEN
+			INSERT INTO Server (Server_Address, Server_Service, Server_DNS) VALUES (Address, Service, NULL);
+		END IF;
 	END IF;
 END//
 

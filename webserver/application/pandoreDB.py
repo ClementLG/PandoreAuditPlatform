@@ -33,12 +33,13 @@ class PandoreDB:
         self.conn.commit()
 
     # Capture
-    def get_running_capture(self) -> Optional[PandoreCapture]:
+    def get_running_captures(self) -> list[PandoreCapture]:
+        captures = []
         self.cursor.callproc('ReadRunningCapture')
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                return PandoreCapture(int(res[0]), str(res[1]), res[2], res[3] or None, str(res[4]), str(res[5]), str(res[6]), int(res[7]))
-        return None
+                captures.append(PandoreCapture(int(res[0]), str(res[1]), res[2], res[3] or None, str(res[4]), str(res[5]), str(res[6]), int(res[7])))
+        return captures
 
     def update_capture(self, capture: PandoreCapture) -> None:
         self.cursor.callproc('UpdateCapture', [capture.ID, capture.Name, capture.StartTime, capture.EndTime, capture.Description, capture.Interface, capture.ConnectionType, capture.InactivityTimeout])
@@ -68,10 +69,19 @@ class PandoreDB:
         return res
 
     def get_capture_total_trafic(self, id: int):
+        trafic = []
         self.cursor.callproc('ReadCaptureTotalTrafic', [int(id)])
         for result in self.cursor.stored_results():
-            res = result.fetchall()
-        return res[0]
+            for res in result.fetchall():
+                if res[0] is None:
+                    trafic.append(0)
+                else:
+                    trafic.append(int(res[0]))
+                if res[1] is None:
+                    trafic.append(0)
+                else:
+                    trafic.append(int(res[1]))
+        return trafic
 
     # Capture request
     def find_all_capture_request(self, id: int) -> list[PandoreCaptureRequest]:

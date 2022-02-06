@@ -1,6 +1,6 @@
 from flask import Flask, request, redirect, url_for, render_template, json, session
 from datetime import datetime
-from application import app, pandoreDB, pandoreException, configuration
+from application import app, pandoreDB, pandoreException, configuration, utils
 from application.pandore_analytics import PandoreAnalytics
 from application.models import *
 import requests, time, math
@@ -21,57 +21,74 @@ def page_not_found(e):
 def index():
     try:
         db = pandoreDB.PandoreDB()
-        running_capture = db.get_running_capture()
         configuration = db.get_configuration()
         db.close_db()
 
-        if(running_capture):
-            if request.method == "POST":
-                requests.post(configuration.SNIFFER_API_ADDRESS + "/stop", timeout=10)
-                return render_template("index.html")
-            return render_template("index2.html")
-        else:
-            if request.method == "POST":
-                if(len(request.values) != 13):
-                    raise pandoreException.PandoreException("Invalid number of arguments")
-                elif len(request.form['capture_name']) <= 0 or len(request.form['capture_name']) > 255:
-                    raise pandoreException.PandoreException("Capture name must contain between 1 and 255 characters")
-                elif len(request.form['capture_description']) <= 0 or len(request.form['capture_description']) > 1000:
-                    raise pandoreException.PandoreException("Capture description must contain between 1 and 1000 characters")
-                elif len(request.form['capture_connection_type']) <= 0 or len(request.form['capture_connection_type']) > 255:
-                    raise pandoreException.PandoreException("Capture connection type must contain between 1 and 255 characters")
-                elif len(request.form['interface_name']) <= 0 or len(request.form['interface_name']) > 255:
-                    raise pandoreException.PandoreException("Interface name must contain between 1 and 255 characters")
-                elif not request.form['capture_duration'].isnumeric():
-                    raise pandoreException.PandoreException("Capture duration must be a number")
-                elif int(request.form['capture_duration']) <= 0:
-                    raise pandoreException.PandoreException("Capture duration must be greater than 0")
-                elif not request.form['ip_w'].isnumeric() or not request.form['ip_x'].isnumeric() or not request.form['ip_y'].isnumeric() or not request.form['ip_z'].isnumeric():
-                    raise pandoreException.PandoreException("Audited device(s) IP must only contain numbers")
-                elif (int(request.form['ip_w']) < 0 or int(request.form['ip_w']) > 255) or (int(request.form['ip_x']) < 0 or int(request.form['ip_x']) > 255) or (int(request.form['ip_y']) < 0 or int(request.form['ip_y']) > 255) or (int(request.form['ip_z']) < 0 or int(request.form['ip_z']) > 255):
-                    raise pandoreException.PandoreException("Invalid IP")
-                elif not request.form['netmask_w'].isnumeric() or not request.form['netmask_x'].isnumeric() or not request.form['netmask_y'].isnumeric() or not request.form['netmask_z'].isnumeric():
-                    raise pandoreException.PandoreException("Audited device(s) netmask must only contain numbers")
-                elif (int(request.form['netmask_w']) < 0 or int(request.form['netmask_w']) > 255) or (int(request.form['netmask_x']) < 0 or int(request.form['netmask_x']) > 255) or (int(request.form['netmask_y']) < 0 or int(request.form['netmask_y']) > 255) or (int(request.form['netmask_z']) < 0 or int(request.form['netmask_z']) > 255):
-                    raise pandoreException.PandoreException("Invalid netmask")
-                netmask = sum(bin(int(x)).count('1') for x in (request.form['netmask_w'] + "." + request.form['netmask_x'] + "." + request.form['netmask_y'] + "." + request.form['netmask_z']).split('.'))
-                ip = request.form['ip_w'] + "." + request.form['ip_x'] + "." + request.form['ip_y'] + "." + request.form['ip_z']
-                data = {
-                    "capture": {
-                        "CAPTURE_CNX_TYPE": request.form['capture_connection_type'],
-                        "CAPTURE_DESCRIPTION": request.form['capture_description'],
-                        "CAPTURE_DURATION": int(request.form['capture_duration']),
-                        "CAPTURE_NAME": request.form['capture_name']
-                    },
-                    "network": {
-                        "AUDITED_INTERFACE": request.form['interface_name'],
-                        "DEVICE_NETWORK": ip + "/" + str(netmask)
+        if request.method == "POST":
+            if 'action' not in request.form: raise pandoreException.PandoreException("Action is missing")
+            else:
+                if request.form['action'] == 'startCapture':
+                    if 'capture_name' not in request.form: raise pandoreException.PandoreException("Capture name is missing")
+                    if 'capture_description' not in request.form: raise pandoreException.PandoreException("Capture description is missing")
+                    if 'capture_connection_type' not in request.form: raise pandoreException.PandoreException("Connection type is missing")
+                    if 'interface_name' not in request.form: raise pandoreException.PandoreException("Interface name is missing")
+                    if 'capture_duration' not in request.form: raise pandoreException.PandoreException("Capture duration is missing")
+                    if 'ip_w' not in request.form: raise pandoreException.PandoreException("IP is incomplete")
+                    if 'ip_x' not in request.form: raise pandoreException.PandoreException("IP is incomplete")
+                    if 'ip_y' not in request.form: raise pandoreException.PandoreException("IP is incomplete")
+                    if 'ip_z' not in request.form: raise pandoreException.PandoreException("IP is incomplete")
+                    if 'netmask_w' not in request.form: raise pandoreException.PandoreException("Netmask is incomplete")
+                    if 'netmask_x' not in request.form: raise pandoreException.PandoreException("Netmask is incomplete")
+                    if 'netmask_y' not in request.form: raise pandoreException.PandoreException("Netmask is incomplete")
+                    if 'netmask_z' not in request.form: raise pandoreException.PandoreException("Netmask is incomplete")
+                    elif len(request.form['capture_name']) <= 0 or len(request.form['capture_name']) > 255:
+                        raise pandoreException.PandoreException("Capture name must contain between 1 and 255 characters")
+                    elif len(request.form['capture_description']) <= 0 or len(request.form['capture_description']) > 1000:
+                        raise pandoreException.PandoreException("Capture description must contain between 1 and 1000 characters")
+                    elif len(request.form['capture_connection_type']) <= 0 or len(request.form['capture_connection_type']) > 255:
+                        raise pandoreException.PandoreException("Capture connection type must contain between 1 and 255 characters")
+                    elif len(request.form['interface_name']) <= 0 or len(request.form['interface_name']) > 255:
+                        raise pandoreException.PandoreException("Interface name must contain between 1 and 255 characters")
+                    elif not request.form['capture_duration'].isnumeric():
+                        raise pandoreException.PandoreException("Capture duration must be a number")
+                    elif int(request.form['capture_duration']) <= 0:
+                        raise pandoreException.PandoreException("Capture duration must be greater than 0")
+                    elif not request.form['ip_w'].isnumeric() or not request.form['ip_x'].isnumeric() or not request.form['ip_y'].isnumeric() or not request.form['ip_z'].isnumeric():
+                        raise pandoreException.PandoreException("Audited device(s) IP must only contain numbers")
+                    elif (int(request.form['ip_w']) < 0 or int(request.form['ip_w']) > 255) or (int(request.form['ip_x']) < 0 or int(request.form['ip_x']) > 255) or (int(request.form['ip_y']) < 0 or int(request.form['ip_y']) > 255) or (int(request.form['ip_z']) < 0 or int(request.form['ip_z']) > 255):
+                        raise pandoreException.PandoreException("Invalid IP")
+                    elif not request.form['netmask_w'].isnumeric() or not request.form['netmask_x'].isnumeric() or not request.form['netmask_y'].isnumeric() or not request.form['netmask_z'].isnumeric():
+                        raise pandoreException.PandoreException("Audited device(s) netmask must only contain numbers")
+                    elif (int(request.form['netmask_w']) < 0 or int(request.form['netmask_w']) > 255) or (int(request.form['netmask_x']) < 0 or int(request.form['netmask_x']) > 255) or (int(request.form['netmask_y']) < 0 or int(request.form['netmask_y']) > 255) or (int(request.form['netmask_z']) < 0 or int(request.form['netmask_z']) > 255):
+                        raise pandoreException.PandoreException("Invalid netmask")
+                    netmask = sum(bin(int(x)).count('1') for x in (request.form['netmask_w'] + "." + request.form['netmask_x'] + "." + request.form['netmask_y'] + "." + request.form['netmask_z']).split('.'))
+                    ip = request.form['ip_w'] + "." + request.form['ip_x'] + "." + request.form['ip_y'] + "." + request.form['ip_z']
+                    data = {
+                        "capture": {
+                            "CAPTURE_CNX_TYPE": request.form['capture_connection_type'],
+                            "CAPTURE_DESCRIPTION": request.form['capture_description'],
+                            "CAPTURE_DURATION": int(request.form['capture_duration']),
+                            "CAPTURE_NAME": request.form['capture_name']
+                        },
+                        "network": {
+                            "AUDITED_INTERFACE": request.form['interface_name'],
+                            "DEVICE_NETWORK": ip + "/" + str(netmask)
+                        }
                     }
-                }
-                requests.post(configuration.SNIFFER_API_ADDRESS + "/configuration", json=data, timeout=10)
-                requests.post(configuration.SNIFFER_API_ADDRESS + "/start", timeout=10)
-
-            return render_template("index.html")
+                    requests.post(configuration.SNIFFER_API_ADDRESS + "/configuration", json=data, timeout=10)
+                    requests.post(configuration.SNIFFER_API_ADDRESS + "/start", timeout=10)
+                elif request.form['action'] == "stopCapture":
+                    if 'capture_to_stop_id' not in request.form: raise pandoreException.PandoreException("Capture ID is missing")
+                    else:
+                        data={
+                            "CaptureID": request.form['capture_to_stop_id']
+                            }
+                        requests.post(configuration.SNIFFER_API_ADDRESS + "/stop", json=data, timeout=10)
+                elif request.form['action'] == "stopAllCaptures":
+                    requests.post(configuration.SNIFFER_API_ADDRESS + "/stop", timeout=10)
+                else:
+                    raise pandoreException.PandoreException("Invalid or unknown action")
+        return render_template("index.html")
     except pandoreException.PandoreException as e:
         if db :
             db.close_db()
@@ -90,19 +107,28 @@ def index():
             error=e
         )
 
-@app.route('/check_capture_running', methods = ['POST', 'GET'])
-def check_capture_running():
+@app.route('/get_running_captures', methods = ['POST', 'GET'])
+def get_running_captures():
     if(request.method == 'GET'):
         return redirect(url_for('index'))
     try:
+        captures = []
         db = pandoreDB.PandoreDB()
-        running_capture = db.get_running_capture()
+        runningCaptures = db.get_running_captures()
+        if(len(runningCaptures) > 0):
+            for capture in runningCaptures:
+                data = {}
+                total_trafic = db.get_capture_total_trafic(capture.ID)
+                data["id"] = capture.ID
+                data["name"] = capture.Name
+                data["description"] = capture.Description + " | " + capture.ConnectionType + " | " + capture.Interface
+                data["start_time"] = capture.StartTime.strftime("%d/%m/%Y %H:%M:%S")
+                data["duration"] = utils.second_to_duration((datetime.utcnow() - capture.StartTime).total_seconds())
+                data["ttdown"] = utils.octet_to_string(total_trafic[0])
+                data["ttup"] = utils.octet_to_string(total_trafic[1])
+                captures.append(data)
         db.close_db()
-        if(running_capture):
-            data = '1'
-        else:
-            data = '0'
-        response = app.response_class(response=json.dumps(data),status=200,mimetype='application/json')
+        response = app.response_class(response=json.dumps(captures),status=200,mimetype='application/json')
         return response
     except Exception as e:
         try:
@@ -110,111 +136,7 @@ def check_capture_running():
                 db.close_db()
         except:
             pass
-        return render_template(
-            "error.html",
-            error=e
-        )
-
-@app.route('/get_running_capture', methods = ['POST', 'GET'])
-def get_running_capture():
-    if(request.method == 'GET'):
-        return redirect(url_for('index'))
-    try:
-        db = pandoreDB.PandoreDB()
-        runningCapture = db.get_running_capture()
-        if(runningCapture):
-            captureInfo = db.find_capture_by_id(runningCapture.ID)
-            stats = db.get_capture_service_stat(runningCapture.ID)
-            total_trafic = db.get_capture_total_trafic(runningCapture.ID)
-        db.close_db()
-
-        if not runningCapture:
-            return json.jsonify(running="0")
-
-        duration_second = (datetime.now() - captureInfo.StartTime).total_seconds()
-    
-        minutes = 0
-        hours = 0
-        up_trafic_nb = total_trafic[1]
-        down_trafic_nb = total_trafic[0]
-
-        while(duration_second >= 3600):
-            duration_second -= 3600
-            hours += 1
-
-        while(duration_second >= 60):
-            duration_second -= 60
-            minutes += 1
-    
-        if(hours < 10):
-            hours = "0" + str(hours)
-        else:
-            hours = str(hours)
-
-        if(minutes < 10):
-            minutes = "0" + str(minutes)
-        else:
-            minutes = str(minutes)
-
-        if(int(duration_second) < 10):
-            duration_second = "0" + str(int(duration_second))
-        else:
-            duration_second = str(int(duration_second))
-
-        string_duration = hours + ":" + minutes + ":" + str(duration_second)
-
-        up_trafic_unit = "B"
-        down_trafic_unit = "B"
-
-        if not up_trafic_nb:
-            up_trafic_nb = 0
-        if not down_trafic_nb:
-            down_trafic_nb = 0
-
-        if(up_trafic_nb > 0):
-            up_down_ratio = round(down_trafic_nb/up_trafic_nb, 3)
-        else:
-            up_down_ratio = "-"
-
-        # convert to good unit
-        if(up_trafic_nb < 1024):
-            up_trafic_unit = "B"
-        elif(total_trafic[1] < (1024*1024)):
-            up_trafic_nb = str(int(up_trafic_nb/1024))
-            up_trafic_unit = "kB"
-        else:
-            up_trafic_nb = str(int(up_trafic_nb/(1024*1024)))
-            up_trafic_unit = "MB"
-
-        if(down_trafic_nb < 1024):
-            down_trafic_unit = "B"
-        elif(total_trafic[0] < (1024*1024)):
-            down_trafic_nb = str(int(down_trafic_nb/1024))
-            down_trafic_unit = "kB"
-        else:
-            down_trafic_nb = str(int(down_trafic_nb/(1024*1024)))
-            down_trafic_unit = "MB"
-
-        statistics = []
-
-        for stat in stats:
-            if stat[0]:
-                name = stat[0]
-            else:
-                name = "Unknown"
-            statistics.append([name, str(stat[1]), str(stat[2])])
-
-        return json.jsonify(running="1", stats=statistics, name=captureInfo.Name, startTime=captureInfo.StartTime, description=captureInfo.Description, downTrafic=down_trafic_nb, downTraficUnit=down_trafic_unit, upTrafic=up_trafic_nb, upTraficUnit=up_trafic_unit, duration=string_duration, ratio=up_down_ratio)
-    except Exception as e:
-        try:
-            if db :
-                db.close_db()
-        except:
-            pass
-        return render_template(
-            "error.html",
-            error=e
-        )
+        return str(e), 500
 
 @app.route('/saved_captures')
 def saved_captures():
@@ -332,11 +254,6 @@ def saved_capture(id):
         up_trafic_unit = "B"
         down_trafic_unit = "B"
 
-        if not up_trafic_nb:
-            up_trafic_nb = 0
-        if not down_trafic_nb:
-            down_trafic_nb = 0
-
         if(up_trafic_nb > 0):
             up_down_ratio = round(down_trafic_nb/up_trafic_nb, 3)
         else:
@@ -361,32 +278,7 @@ def saved_capture(id):
             down_trafic_nb = str(int(down_trafic_nb/(1024*1024)))
             down_trafic_unit = "MB"
 
-        duration_second = (capture.EndTime - capture.StartTime).total_seconds()
-    
-        while(duration_second >= 3600):
-            duration_second -= 3600
-            hours += 1
-
-        while(duration_second >= 60):
-            duration_second -= 60
-            minutes += 1
-    
-        if(hours < 10):
-            hours = "0" + str(hours)
-        else:
-            hours = str(hours)
-
-        if(minutes < 10):
-            minutes = "0" + str(minutes)
-        else:
-            minutes = str(minutes)
-
-        if(duration_second < 10):
-            duration_second = "0" + str(duration_second)
-        else:
-            duration_second = str(duration_second)
-
-        string_duration = hours + ":" + minutes + ":" + duration_second
+        string_duration = utils.second_to_duration((capture.EndTime - capture.StartTime).total_seconds())
 
         requests_history = {}
         request_history_unit = "sec"

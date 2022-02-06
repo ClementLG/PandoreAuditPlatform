@@ -59,34 +59,46 @@ class PandoreAnalytics:
         for server in unknownServers:
             try:
                 if(configuration.getStopAnalytics()): break
+
+                #domain_name = None
+
+                #if (ipaddress.ip_address(server.Address).is_private):
+                #    domain_name = "Intranet"
+                #else:
+                #    if server.DNS:
+                #        domain_name = server.DNS.Value
+                #    else:
+
+
+
                 service = None
 
-                if (ipaddress.ip_address(server.Address).is_private):
-                    print("Str 0 - Service found for " + ip + " : Intranet service")
-                    for val in self.__runningConfiguration.getDicitonary():
-                        if val.Service.Name == "Intranet service":
-                            return val.Service
-                if server.DNS:
-                    for val in self.__runningConfiguration.getDicitonary():
-                        for keyword in val.Keywords:
-                            if(keyword.Value in server.DNS.Value):
-                                print("Str 1 - Service found for " + server.DNS.Value + " : " + val.Service.Name)
-                                service = val.Service
+                #if (ipaddress.ip_address(server.Address).is_private):
+                #    print("Str 0 - Service found for " + ip + " : Intranet service")
+                #    for val in self.__runningConfiguration.getDicitonary():
+                #        if val.Service.Name == "Intranet service":
+                #            return val.Service
+                #if server.DNS:
+                #    for val in self.__runningConfiguration.getDicitonary():
+                #        for keyword in val.Keywords:
+                #            if(keyword.Value in server.DNS.Value):
+                #                print("Str 1 - Service found for " + server.DNS.Value + " : " + val.Service.Name)
+                #                service = val.Service
 
-                if(configuration.getStopAnalytics()): break
+                #if(configuration.getStopAnalytics()): break
 
-                if server.DNS is not None:
-                    try:
-                        dns_info = whois(server.DNS.Value)
-                        for val in self.__runningConfiguration.getDicitonary():
-                            for keyword in val.Keywords:
-                                if(keyword.Value in dns_info["org"].lower()):
-                                    print("Str 2 - Service found for " + server.DNS.Value + " : " + val.Service.Name)
-                                    service = val.Service
-                    except Exception as e:
-                        pass
+                #if server.DNS is not None:
+                #    try:
+                #        dns_info = whois(server.DNS.Value)
+                #        for val in self.__runningConfiguration.getDicitonary():
+                #            for keyword in val.Keywords:
+                #                if(keyword.Value in dns_info["org"].lower()):
+                #                    print("Str 2 - Service found for " + server.DNS.Value + " : " + val.Service.Name)
+                #                    service = val.Service
+                #    except Exception as e:
+                #        pass
 
-                if(configuration.getStopAnalytics()): break
+                #if(configuration.getStopAnalytics()): break
 
                 try:
                     socket.setdefaulttimeout(3)
@@ -99,17 +111,17 @@ class PandoreAnalytics:
                 except Exception as e:
                     pass
 
-                if(configuration.getStopAnalytics()): break
+                #if(configuration.getStopAnalytics()): break
 
-                try:
-                    ip_info = IPWhois(server.Address).lookup_rdap()
-                    for val in self.__runningConfiguration.getDicitonary():
-                        for keyword in val.Keywords:
-                            if(keyword.Value in ip_info['asn_description'].lower()):
-                                print("Str 4 - Service found for " + ip + " : " +  val.Service.Name)
-                                service = val.Service
-                except Exception as e:
-                    pass
+                #try:
+                #    ip_info = IPWhois(server.Address).lookup_rdap()
+                #    for val in self.__runningConfiguration.getDicitonary():
+                #        for keyword in val.Keywords:
+                #            if(keyword.Value in ip_info['asn_description'].lower()):
+                #                print("Str 4 - Service found for " + ip + " : " +  val.Service.Name)
+                #                service = val.Service
+                #except Exception as e:
+                #    pass
 
                 configuration.incrementNumberOfProcessedServers()
                 if service:
