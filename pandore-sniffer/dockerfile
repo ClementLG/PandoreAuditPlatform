@@ -8,12 +8,14 @@ LABEL version="1.0"
 RUN apk add tshark
 
 # COPY FILES
-RUN mkdir /app
-COPY requirements.txt /app
-COPY ./app/pandore_* /app/
+RUN mkdir /application
+ADD requirements.txt /application
+ADD application /application/
+
+
 
 # INSTALL LIBRARIES
-WORKDIR /app
+WORKDIR /application
 RUN pip install --user -r requirements.txt
 
 #TimeZone
@@ -22,8 +24,12 @@ ENV TZ=Europe/Paris
 RUN apk add --no-cache tzdata
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+# DEFAULT PORT
+EXPOSE 5555
+
 # RUN
 
-CMD ["python3", "/app/pandore_agent.py"]
+ENTRYPOINT [ "python" ]
+CMD ["/application/pandore_agent.py"]
 
 # docker run --rm -it  --cap-add=NET_RAW --cap-add=NET_ADMIN --net=host pandorenetwork

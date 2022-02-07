@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="/static/img/pandore_icon.ico"/>
+    <link rel="stylesheet" type=text/css href="/static/css/logging.css">
+    <title>Sniffer live console</title>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <script type="text/javascript" src="/static/js/functions.js"></script>
+</head>
+<body id="main">
+<! -- Sniffer Status -->
+<div class="status">
+    <p id="sysStatus">{{ status }}</p>
+</div>
+<! -- end Sniffer Status -->
+<! -- control buttons -->
+<div class="control-buttons">
+    <form method="post" onsubmit="start_button(); return false;">
+        <input type="submit" name="submit_button" value="Start">
+    </form>
+    <form method="post" onsubmit="stop_button(); return false;">
+        <input type="submit" name="submit_button" value="Stop">
+    </form>
+    <button class="api" onclick="location.href = '/api';">Go to API doc</button>
+
+</div>
+<! -- end control buttons -->
+<! -- config tabs -->
+<div class="row">
+    <h2 align="center">Last sniffer config</h2>
+    <div>
+        <table class="table">
+            <thead class="tab-header">
+            <tr>
+                <th colspan="100%">Network</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                {% for config in configs.network %}
+                <th>{{config}}</th>
+                {% endfor %}
+            </tr>
+            <tr>
+                {% for key, value in configs.network.items() %}
+                <th>{{value}}</th>
+                {% endfor %}
+            </tr>
+            </tbody>
+        </table>
+        <table class="table">
+            <thead class="tab-header">
+            <tr>
+                <th colspan="100%">Database</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                {% for config in configs.database %}
+                <th>{{config}}</th>
+                {% endfor %}
+            </tr>
+            <tr>
+                {% for key, value in configs.database.items() %}
+                <th>{{value}}</th>
+                {% endfor %}
+            </tr>
+            </tbody>
+        </table>
+        <table class="table">
+            <thead class="tab-header">
+            <tr>
+                <th colspan="100%">Capture</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                {% for config in configs.capture %}
+                <th>{{config}}</th>
+                {% endfor %}
+            </tr>
+            <tr>
+                {% for key, value in configs.capture.items() %}
+                <th>{{value}}</th>
+                {% endfor %}
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+<! -- end config tabs -->
+</body>
+<script>
+$(document).ready(function() {
+    setInterval("ajaxd()",1000); // call every 1 seconds
+});
+
+function ajaxd() {
+  //reload result into element with id "sysStatus"
+  $("#sysStatus").load("/api/status", function() {});
+
+}
+</script>
+</html>
