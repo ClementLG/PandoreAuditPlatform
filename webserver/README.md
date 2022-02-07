@@ -19,10 +19,10 @@ apt install python3-pip
 pip install --user -r requirements.txt
 ```
 
-3) Configure the GUI using the file *application/configuration.cfg* 
+3) Configure the GUI using the file *application/configuration.py* 
 
 ```
-nano ./application/configuration.cfg
+nano ./application/configuration.py
 ```
 
 4) Launch the application *runserver.py*
@@ -39,22 +39,24 @@ https://docs.docker.com/engine/install/debian/
 
 2) Build the pandore network image (You have to be in the dockerfile directory) :
 ```
-docker build --tag "pandore-gui:latest" .
+docker build --tag "pandore-web:latest" .
 ```
 
 3) Run the container :
 
 To run the container, use the following command :
 ```
-docker run -p 5555:5555/tcp --name pandoregui pandore-gui
+docker run -p 80:5555/tcp pandore-web
 ```
 
 
-Environnement variable (-e option) can be used (not develloped yet) :
-| VARIABLE| VALUE|
-| ------ | ------ |
-| XXX | XXX
-| XXX | XXX
-| XXX | XXX
+Environnement variable (-e option) can be used :
+| VARIABLE| VALUE| DEFAULT|
+| ------ | ------ | ------ |
+| PW_DB_HOST | Database host | localhost
+| PW_DB_PORT | Database port | 3306
+| PW_DB_USER | Database username | user
+| PW_DB_PASSWORD | Database password | user
+| PW_DB_NAME | Database name | Pandore
 
 ---------------------------------------

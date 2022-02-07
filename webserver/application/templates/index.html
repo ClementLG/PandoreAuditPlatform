@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Waiting for capture - Pandore</title>
+    <title>Running capture - Pandore</title>
     <link rel="icon" href="/static/image/pandore_icon.ico" />
     <link rel="stylesheet" href="/static/bootstrap/css/bootstrap.css">
     <link rel="stylesheet" href="/static/bootstrap/icon/bootstrap-icons.css">
@@ -29,6 +29,9 @@
                         <li class="nav-item">
                             <a class="nav-link" href="/configuration">Configuration</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/sniffer_configuration">Sniffer configuration</a>
+                        </li>
                     </ul>
                     <span class="navbar-text">
                         3<sup>rd</sup> year project
@@ -39,14 +42,25 @@
     </header>
     <content>
         <div class="container-fluid px-5 py-5">
-            <div class="row text-center text-imt-darkblue">
-                <h1>Waiting for a new capture ...</h1>
-            </div>
-            <div class="row text-center">
-                <span class="bi bi-hourglass-split" style="font-size: 100px; color: rgb(0, 30, 66);"></span>
-            </div>
-            <div class="row">
+            <div class="alert alert-danger" role="alert" id="error">
 
+            </div>
+            <div id="captureContainer">
+                <button type="button" class="btn btn-imt-green mb-3" data-bs-toggle="modal" data-bs-target="#modalRunCapture">
+                    <span class="bi bi-caret-right"></span> Start new capture
+                </button>
+                <p class="" style="font-size: 30px;">
+                    Running captures
+                </p>
+                <div id="noCaptureRunning">
+                    <p class="text-danger">
+                        No capture running for the moment
+                    </p>
+                </div>
+                <div id="containerRunningCapture">
+                    <div class="row" id="rowCaptures">
+                    </div>
+                </div>
             </div>
         </div>
     </content>
@@ -68,28 +82,262 @@
             </div>
         </div>
     </footer>
+
+    <div class="modal fade" id="modalStopCapture" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form method="post">
+                <input type="hidden" name="action" value="stopCapture" />
+                <input type="hidden" name="capture_to_stop_id" id="capture_to_stop_id" value="" />
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Stop capture</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-danger">Do you really want to stop the capture ?</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-danger">Stop</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalRunCapture" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <form method="post">
+                <input type="hidden" name="action" value="startCapture" />
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Run new capture</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="capture_name" class="form-label"><strong>Name :</strong></label>
+                            <input type="text" class="form-control" id="capture_name" name="capture_name" placeholder="My capture name" max="255" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="capture_duration" class="form-label"><strong>Duration (second) :</strong></label>
+                            <input type="number" class="form-control" id="capture_duration" name="capture_duration" min="1" step="1" value="60" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="capture_description" class="form-label"><strong>Description :</strong></label>
+                            <input type="text" class="form-control" id="capture_description" name="capture_description" placeholder="My capture description" max="1000" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="capture_connection_type" class="form-label"><strong>Connection type :</strong></label>
+                            <input type="text" class="form-control" id="capture_connection_type" name="capture_connection_type" placeholder="4G, Wi-Fi, Ethernet wire, etc..." max="255" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="interface_name" class="form-label"><strong>Interface name :</strong></label>
+                            <input type="text" class="form-control" id="interface_name" name="interface_name" placeholder="tun0, eth0, etc..." max="255" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="device_ip" class="form-label"><strong>Audited device(s) IP range :</strong></label>
+                            <div class="row" id="device_ip">
+                                <div class="col">
+                                    <input type="number" class="form-control" id="ip_w" name="ip_w" placeholder="192" min="0" max="255" step="1" value="192" required />
+                                </div>
+                                <div class="col-auto">
+                                    .
+                                </div>
+                                <div class="col">
+                                    <input type="number" class="form-control" id="ip_x" name="ip_x" placeholder="168" min="0" max="255" step="1" value="168" required />
+                                </div>
+                                <div class="col-auto">
+                                    .
+                                </div>
+                                <div class="col">
+                                    <input type="number" class="form-control" id="ip_y" name="ip_y" placeholder="10" min="0" max="255" step="1" value="10" required />
+                                </div>
+                                <div class="col-auto">
+                                    .
+                                </div>
+                                <div class="col">
+                                    <input type="number" class="form-control" id="ip_z" name="ip_z" placeholder="0" min="0" max="255" step="1" value="0" required />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="device_netmask" class="form-label"><strong>Audited device(s) netmask :</strong></label>
+                            <div class="row" id="device_netmask">
+                                <div class="col">
+                                    <input type="number" class="form-control" id="netmask_w" name="netmask_w" placeholder="255" min="0" max="255" step="1" value="255" required />
+                                </div>
+                                <div class="col-auto">
+                                    .
+                                </div>
+                                <div class="col">
+                                    <input type="number" class="form-control" id="netmask_x" name="netmask_x" placeholder="255" min="0" max="255" step="1" value="255" required />
+                                </div>
+                                <div class="col-auto">
+                                    .
+                                </div>
+                                <div class="col">
+                                    <input type="number" class="form-control" id="netmask_y" name="netmask_y" placeholder="255" min="0" max="255" step="1" value="255" required />
+                                </div>
+                                <div class="col-auto">
+                                    .
+                                </div>
+                                <div class="col">
+                                    <input type="number" class="form-control" id="netmask_z" name="netmask_z" placeholder="0" min="0" max="255" step="1" value="0" required />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-imt-green">Run</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 </html>
 
 <script>
+    document.getElementById('error').style.display = 'none';
     ajaxError = false;
-
     var intervalId = window.setInterval(function () {
         if (!ajaxError) {
             $.ajax({
-                url: "check_capture_running",
+                url: "get_running_captures",
                 type: "POST",
                 async: false,
                 success: function (response, textStatus, jqXHR) {
-                    if (response == '1') {
-                        location.reload();
+                    if (response.length > 0) {
+                        var divRow = document.getElementById('rowCaptures');
+                        for (var i = 0; i < response.length; i++) {
+                            // Check if the div doesn't exist
+                            if (document.getElementById('capture_' + response[i]['id']) == null) {
+                                var divCapture = document.createElement("div");
+                                divCapture.className = 'col-sm-3';
+                                divCapture.id = 'capture_' + response[i]['id'];
+                                var divCard = document.createElement("div");
+                                divCard.className = 'card shadow mb-3';
+                                divCapture.appendChild(divCard);
+                                var divCardBody = document.createElement('div');
+                                divCardBody.className = 'card-body border-start border-imt-darkblue border-5 rounded-start';
+                                divCard.appendChild(divCardBody);
+                                var divRowHeader = document.createElement('div');
+                                divRowHeader.className = 'row';
+                                divCardBody.appendChild(divRowHeader);
+                                var divHeaderCol = document.createElement('div');
+                                divHeaderCol.className = 'col';
+                                divRowHeader.appendChild(divHeaderCol);
+                                var captureTitle = document.createElement('h5');
+                                captureTitle.innerHTML = response[i]['name'];
+                                captureTitle.id = 'capture_title_' + response[i]['id'];
+                                divHeaderCol.appendChild(captureTitle);
+                                var divHeaderColAuto = document.createElement('div');
+                                divHeaderColAuto.className = 'col-auto';
+                                divRowHeader.appendChild(divHeaderColAuto);
+                                var buttonHeader = document.createElement('button');
+                                buttonHeader.type = 'button';
+                                buttonHeader.className = 'btn btn-sm btn-danger';
+                                buttonHeader.innerHTML = 'Stop capture';
+                                buttonHeader.setAttribute("onClick", "stopCapture(" + response[i]['id'] + ");")
+                                divHeaderColAuto.appendChild(buttonHeader);
+                                var captureDescription = document.createElement('p');
+                                captureDescription.className = 'text-secondary mb-3';
+                                captureDescription.id = 'capture_description_' + response[i]['id'];
+                                captureDescription.innerHTML = response[i]['description'];
+                                divCardBody.appendChild(captureDescription);
+                                var newDivRow = document.createElement('div');
+                                newDivRow.className = 'row';
+                                divCardBody.appendChild(newDivRow);
+                                var divCol = document.createElement('div');
+                                divCol.className = 'col-sm';
+                                newDivRow.appendChild(divCol);
+                                var divColContent = document.createElement('p');
+                                divColContent.id = 'capture_start_time_' + response[i]['id'];
+                                divColContent.className = 'border-bottom';
+                                divColContent.innerHTML = '<strong>Start time : </strong><span class="text-imt-darkblue">' + response[i]['start_time'] + '</span>';
+                                divCol.appendChild(divColContent);
+                                divCol = document.createElement('div');
+                                divCol.className = 'col-sm';
+                                newDivRow.appendChild(divCol);
+                                divColContent = document.createElement('p');
+                                divColContent.id = 'capture_duration_' + response[i]['id'];
+                                divColContent.className = 'border-bottom';
+                                divColContent.innerHTML = '<strong>Duration : </strong><span class="text-imt-darkblue">' + response[i]['duration'] + '</span>';
+                                divCol.appendChild(divColContent);
+                                newDivRow = document.createElement('div');
+                                newDivRow.className = 'row';
+                                divCardBody.appendChild(newDivRow);
+                                divCol = document.createElement('div');
+                                divCol.className = 'col-sm';
+                                newDivRow.appendChild(divCol);
+                                divColContent = document.createElement('p');
+                                divColContent.id = 'capture_total_upload_' + response[i]['id'];
+                                divColContent.className = 'border-bottom';
+                                divColContent.innerHTML = '<strong>Total upload : </strong><span class="text-imt-green">' + response[i]['ttup'] + '</span>';
+                                divCol.appendChild(divColContent);
+                                divCol = document.createElement('div');
+                                divCol.className = 'col-sm';
+                                newDivRow.appendChild(divCol);
+                                divColContent = document.createElement('p');
+                                divColContent.id = 'capture_total_download_' + response[i]['id'];
+                                divColContent.className = 'border-bottom';
+                                divColContent.innerHTML = '<strong>Total download : </strong><span class="text-imt-blue">' + response[i]['ttdown'] + '</span>';
+                                divCol.appendChild(divColContent);
+                                divRow.appendChild(divCapture);
+                            }
+                            // else update it
+                            else {
+                                document.getElementById('capture_title_' + response[i]['id']).innerHTML = response[i]['name'];
+                                document.getElementById('capture_description_' + response[i]['id']).innerHTML = response[i]['description'];
+                                document.getElementById('capture_start_time_' + response[i]['id']).innerHTML = '<strong>Start time : </strong><span class="text-imt-darkblue">' + response[i]['start_time'] + '</span>';
+                                document.getElementById('capture_duration_' + response[i]['id']).innerHTML = '<strong>Duration : </strong><span class="text-imt-darkblue">' + response[i]['duration'] + '</span>';
+                                document.getElementById('capture_total_upload_' + response[i]['id']).innerHTML = '<strong>Total upload : </strong><span class="text-imt-green">' + response[i]['ttup'] + '</span>';
+                                document.getElementById('capture_total_download_' + response[i]['id']).innerHTML = '<strong>Total download : </strong><span class="text-imt-blue">' + response[i]['ttdown'] + '</span>';
+                            }
+                        }
+                        // Remove finished captures
+                        nodes = document.getElementById('rowCaptures').childNodes;
+                        for (var i = 0; i < nodes.length; i++) {
+                            if (nodes[i].id != null && nodes[i].id.startsWith('capture_')) {
+                                var deleteCapture = true;
+                                for (var j = 0; j < response.length; j++) {
+                                    if (response[j]['id'] == parseInt(nodes[i].id.replace('capture_', ''))) {
+                                        deleteCapture = false;
+                                    }
+                                }
+                                if (deleteCapture) {
+                                    document.getElementById(nodes[i].id).remove();
+                                }
+                            }
+                        }
+                        document.getElementById('noCaptureRunning').style.display = 'none';
+                        document.getElementById('containerRunningCapture').style.display = 'block';
+                    }
+                    else {
+                        document.getElementById('noCaptureRunning').style.display = 'block';
+                        document.getElementById('containerRunningCapture').style.display = 'none';
+                        nodes = document.getElementById('rowCaptures').childNodes;
+                        for (var i = 0; i < nodes.length; i++){
+                            if (nodes[i].id != null && nodes[i].id.startsWith('capture_')) {
+                                document.getElementById(nodes[i].id).remove();
+                            }
+                        }
                     }
                 },
                 error: function (XMLHttpRequest, textStatus, errorThrown) {
                     ajaxError = true;
-                    location.reload();
+                    document.getElementById('error').innerHTML = XMLHttpRequest.responseText;
+                    document.getElementById('error').style.display = 'block';
+                    document.getElementById('captureContainer').style.display = 'none';
                 }
             });
         }
-    }, 1000);
+    }, 2000);
+
+    function stopCapture(captureID) {
+        document.getElementById('capture_to_stop_id').value = captureID;
+        $('#modalStopCapture').modal('show');
+    }
 </script>
