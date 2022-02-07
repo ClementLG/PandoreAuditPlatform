@@ -290,6 +290,14 @@ class PandoreDB:
                 self.conn.commit()
 
     # ServiceKeyword
+    def find_all_service_keyword(self) -> list[PandoreServiceKeyword]:
+        keywords = []
+        self.cursor.callproc('ReadAllServiceKeyword', [])
+        for result in self.cursor.stored_results():
+            for res in result.fetchall():
+                keywords.append(PandoreServiceKeyword(int(res[0]), str(res[1]), PandoreService(int(res[2]), str(res[4]), 0)))
+        return keywords
+
     def find_all_keyword_by_service(self, id: int) -> list[PandoreServiceKeyword]:
         keywords = []
         if not id:

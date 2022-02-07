@@ -3,7 +3,7 @@ from datetime import datetime
 from application import app, pandoreDB, pandoreException, configuration, utils
 from application.pandore_analytics import PandoreAnalytics
 from application.models import *
-import requests, time, math
+import requests, math
 
 analytics_running = False
 current_analytic_number = 0
@@ -410,10 +410,7 @@ def configurations():
             elif(request.form['actionType'] == 'autoServerClassification'):
                 global PandoreAnalyticsRunner
                 if not PandoreAnalyticsRunner.isAnalyticsRunning():
-                    serviceKeywords = []
-                    for service in services:
-                        serviceKeywords.append(PandoreAnalyticsServiceKeywords(service, db.find_all_keyword_by_service(service.ID)))
-                    PandoreAnalyticsRunner.run_analytics(servers, serviceKeywords, config.ANALYTICS_TIMEOUT)
+                    PandoreAnalyticsRunner.run_analytics(servers, db.find_all_service_keyword(), config.ANALYTICS_TIMEOUT)
             elif(request.form['actionType'] == 'editApplicationConfiguration'):
                 if(len(request.values) != 11): raise pandoreException.PandoreException("Invalid number of arguments")
                 db.update_configuration(PandoreConfiguration(int(request.form['analytics_timeout']), int(request.form['nutriscore_reference_frequency']), float(request.form['nutriscore_reference_debit']), int(request.form['nutriscore_reference_diversity']), int(request.form['nutriscore_weight_frequency']), int(request.form['nutriscore_weight_debit']), int(request.form['nutriscore_weight_diversity']), float(request.form['nutriscore_sigmoide_slope']), int(request.form['nutriscore_average_type']), request.form['sniffer_api_address']))

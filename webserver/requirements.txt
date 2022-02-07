@@ -1,13 +1,11 @@
 certifi==2021.10.8
 charset-normalizer==2.0.10
 click==7.1.2
-dnspython==2.0.0
 Flask==2.0.2
 Flask-Cors==3.0.10
 flask-swagger-ui==3.36.0
 future==0.18.2
 idna==3.3
-ipwhois==1.2.0
 itsdangerous==2.0.1
 Jinja2==3.0.3
 lxml==4.7.1
@@ -16,8 +14,6 @@ mysql-connector-python==8.0.28
 pip==21.2.3
 protobuf==3.19.1
 py==1.11.0
-pyshark==0.4.5
-python-whois==0.7.3
 requests==2.27.1
 setuptools==57.4.0
 six==1.16.0

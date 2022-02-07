@@ -1,6 +1,4 @@
-import multiprocessing, ipaddress, threading, socket, time
-from ipwhois import IPWhois
-from whois import whois
+import multiprocessing, ipaddress, threading, socket, time, re
 from multiprocessing import Queue, Value
 from application import pandoreDB, configuration
 from application.models import *
@@ -15,10 +13,11 @@ class PandoreAnalytics:
         self.__runningConfiguration = None
         print("Pandore analytics is running")
 
-    def run_analytics(self, unknownServers: list[PandoreServer], dictionary: list[PandoreAnalyticsServiceKeywords], analyticsTimeout: int):
+    def run_analytics(self, unknownServers: list[PandoreServer], dictionary: list[PandoreServiceKeyword], analyticsTimeout: int):
         try:
             self.__runningConfiguration = PandoreAnalyticsRunningConfiguration(len(unknownServers), dictionary)
-            numberOfThreads = multiprocessing.cpu_count()
+            #numberOfThreads = multiprocessing.cpu_count()
+            numberOfThreads = 1
             splittedUnknownServers = list(self.__split_list(unknownServers, numberOfThreads))
             threads = []
             for i in range(numberOfThreads):
@@ -56,77 +55,38 @@ class PandoreAnalytics:
             return self.__runningConfiguration.getNumberOfProcessedServers()
 
     def __analytics_worker_thread(self, unknownServers: list[PandoreServer], configuration: PandoreAnalyticsRunningConfiguration, analyticsTimeout: int):
+        dictionnary_keywords = self.__runningConfiguration.getDicitonary()
         for server in unknownServers:
             try:
                 if(configuration.getStopAnalytics()): break
 
-                #domain_name = None
+                domain_name = None
 
-                #if (ipaddress.ip_address(server.Address).is_private):
-                #    domain_name = "Intranet"
-                #else:
-                #    if server.DNS:
-                #        domain_name = server.DNS.Value
-                #    else:
+                if (ipaddress.ip_address(server.Address).is_private):
+                    domain_name = "Intranet"
+                else:
+                    if server.DNS:
+                        domain_name = server.DNS.Value
 
-
-
-                service = None
-
-                #if (ipaddress.ip_address(server.Address).is_private):
-                #    print("Str 0 - Service found for " + ip + " : Intranet service")
-                #    for val in self.__runningConfiguration.getDicitonary():
-                #        if val.Service.Name == "Intranet service":
-                #            return val.Service
-                #if server.DNS:
-                #    for val in self.__runningConfiguration.getDicitonary():
-                #        for keyword in val.Keywords:
-                #            if(keyword.Value in server.DNS.Value):
-                #                print("Str 1 - Service found for " + server.DNS.Value + " : " + val.Service.Name)
-                #                service = val.Service
-
-                #if(configuration.getStopAnalytics()): break
-
-                #if server.DNS is not None:
-                #    try:
-                #        dns_info = whois(server.DNS.Value)
-                #        for val in self.__runningConfiguration.getDicitonary():
-                #            for keyword in val.Keywords:
-                #                if(keyword.Value in dns_info["org"].lower()):
-                #                    print("Str 2 - Service found for " + server.DNS.Value + " : " + val.Service.Name)
-                #                    service = val.Service
-                #    except Exception as e:
-                #        pass
-
-                #if(configuration.getStopAnalytics()): break
-
-                try:
-                    socket.setdefaulttimeout(3)
-                    host_info = socket.gethostbyaddr(server.Address)
-                    for val in self.__runningConfiguration.getDicitonary():
-                        for keyword in val.Keywords:
-                            if(keyword.Value in host_info[0].lower()):
-                                print("Str 3 - Service found for " + ip + " : " +  val.Service.Name)
-                                service = val.Service
-                except Exception as e:
-                    pass
-
-                #if(configuration.getStopAnalytics()): break
-
-                #try:
-                #    ip_info = IPWhois(server.Address).lookup_rdap()
-                #    for val in self.__runningConfiguration.getDicitonary():
-                #        for keyword in val.Keywords:
-                #            if(keyword.Value in ip_info['asn_description'].lower()):
-                #                print("Str 4 - Service found for " + ip + " : " +  val.Service.Name)
-                #                service = val.Service
-                #except Exception as e:
-                #    pass
-
+                if domain_name is not None:
+                    if domain_name == "Intranet":
+                        server.Service = PandoreService(1, "Intranet service", 0)
+                    else:
+                        bestMatch = None
+                        for i in range(len(dictionnary_keywords)):
+                            res = re.search(dictionnary_keywords[i].Value, domain_name)
+                            if res:
+                                if bestMatch is None:
+                                    bestMatch = dictionnary_keywords[i]
+                                else:
+                                    if len(bestMatch.Value) < len(dictionnary_keywords[i].Value):
+                                        bestMatch = dictionnary_keywords[i]
+                        if bestMatch is not None:
+                            server.Service = bestMatch.Service
+ 
                 configuration.incrementNumberOfProcessedServers()
-                if service:
+                if server.Service is not None:
                     db = pandoreDB.PandoreDB()
-                    server.Service = service
                     db.update_server(server)
                     db.close_db()
             except Exception as e:

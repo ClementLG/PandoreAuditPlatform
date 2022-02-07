@@ -27,7 +27,7 @@ class PandoreAnalyticsRunningConfiguration():
     def getDicitonary(self):
         dic = None
         self.lock.acquire()
-        dic = self.__dictionary
+        dic = self.__dictionary.copy()
         self.lock.release()
         return dic
 

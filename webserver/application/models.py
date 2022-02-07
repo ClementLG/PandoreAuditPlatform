@@ -132,8 +132,8 @@ class PandoreCaptureRequestNotDetailed():
 
 class PandoreAnalyticsServiceKeywords():
     Service: PandoreService
-    Keywords: list[PandoreServiceKeyword]
+    Regex: str
 
-    def __init__(self, Service: PandoreService, Keywords: list[PandoreServiceKeyword]) -> None:
+    def __init__(self, Service: PandoreService, Regex: str) -> None:
         self.Service = Service
-        self.Keywords = Keywords
+        self.Regex = Regex
