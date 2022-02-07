@@ -12,7 +12,7 @@ from random import random
 
 # VARIABLES=====================================================================
 
-MAX_THREAD = 2
+MAX_THREAD = 4
 SNIFFER = []
 SNIFFERS_Thread = {}
 SNIFFERS_ID = {}
@@ -194,9 +194,10 @@ def stop_sniffer_subfunction_by_id(capture_id=None):
 
     clean_bugged_state()
 
-    for key in SNIFFERS_ID:
-        if int(SNIFFERS_ID.get(key)) == int(capture_id):
-            t_id = key
+    if capture_id is not None:
+        for key in SNIFFERS_ID:
+            if int(SNIFFERS_ID.get(key)) == int(capture_id):
+                t_id = key
 
     if t_id is not None and capture_id is not None:
         db = PandoreSender(
@@ -205,9 +206,9 @@ def stop_sniffer_subfunction_by_id(capture_id=None):
             CONFIG.get_parameter('database', 'DB_USER'),
             CONFIG.get_parameter('database', 'DB_PASSWORD'),
             CONFIG.get_parameter('database', 'DB'))
-        SNIFFERS_Thread[t_id].kill()
         db.path_blank_end_time_by_id(datetime.datetime.utcnow(), capture_id)
         db.close_db()
+        SNIFFERS_Thread[t_id].kill()
         print("[INFO] Thread " + str(t_id) + " Killed ! (Capture " + str(capture_id) + ")")
         del SNIFFERS_Thread[t_id]
         del SNIFFERS_ID[t_id]
@@ -215,7 +216,6 @@ def stop_sniffer_subfunction_by_id(capture_id=None):
         t_id = None
         for t in SNIFFERS_Thread:
             t_id = t
-            SNIFFERS_Thread[t].kill()
         db = PandoreSender(
             CONFIG.get_parameter('database', 'DB_HOST'),
             CONFIG.get_parameter('database', 'DB_PORT'),
@@ -225,6 +225,7 @@ def stop_sniffer_subfunction_by_id(capture_id=None):
         c_id = SNIFFERS_ID[t_id]
         db.path_blank_end_time_by_id(datetime.datetime.utcnow(), c_id)
         db.close_db()
+        SNIFFERS_Thread[t_id].kill()
         print("[INFO] Thread " + str(t_id) + " Killed ! (Capture " + str(c_id) + ")")
         del SNIFFERS_Thread[t_id]
         del SNIFFERS_ID[t_id]
