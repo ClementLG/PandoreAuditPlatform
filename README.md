@@ -55,14 +55,10 @@ All the instructions are available [here](./Database/)
 
 All the instructions are available [here](./pandore-sniffer/)
 
-### Pandore Analytics
-
-All the instructions are available [here](./webserver/application/analytics/)
-
 ### Pandore GUI
 
 All the instructions are available [here](./webserver)
-
+_Note that the web server embeds the analytic module._
 
 
 

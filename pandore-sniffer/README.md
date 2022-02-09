@@ -2,7 +2,9 @@
 
 ## A - description
 
-The agent is the application which will make it possible to send the traffic in a formatted manner in a second application which will carry out more specific and cumbersome processing.
+Pandore sniffer is the module that captures and sends traffic to the database. A second application (analytics) performs more specific and heavy processing.
+
+In order to handle the sniffer more easily, a REST API has been created and can be used optionally.
 
 ## B - Basic usage
 1) setup python (3.6 or earlier) :
@@ -12,17 +14,16 @@ apt install python3-pip
 ```
 
 2) Install dependencies :
-```
-pip 3 install pyshark
-pip 3 install mysql-connector-python
-```
 
-or install using the requirements.txt
+Install the necessary libraries using the requirements.txt and pip
 ```
 pip install --user -r requirements.txt
 ```
 
-3) Configure the agent using the file *pandore-config.cfg* 
+3) Configure the agent using the file *pandore-config.ini*
+
+_Note that you can enable the API by setting the Sniffer-GUI option on True_
+_You should be able to update the configuration using the REST API (this avoids having to restart the program)_
 
 4) Launch the application *pandore_agent.py*
 ```
@@ -46,9 +47,11 @@ To run the container, use the following command :
 docker run --rm -it --cap-add=NET_RAW --cap-add=NET_ADMIN --net=host pandore-sniffer
 
 ```
+_The '--rm' option is not required. This only allows the container to be deleted when the sniffer operation is complete or on a CTRL+C_
+
 You can send the config file from the directory to the container using the following command :
 ```
-docker run --rm -it  -v $(pwd)/pandore_config.py:/app/pandore_config.py --cap-add=NET_RAW --cap-add=NET_ADMIN --net=host pandore-sniffer
+docker run --rm -it  -v $(pwd)/pandore_config.ini:/app/pandore_config.ini --cap-add=NET_RAW --cap-add=NET_ADMIN --net=host pandore-sniffer
 ```
 
 Environnement variable (-e option) can be used :
@@ -76,5 +79,63 @@ docker run --rm -it --cap-add=NET_RAW --cap-add=NET_ADMIN --net=host -e PANDORE_
 ```
 
 note: if you have multiple options, you have to reuse '-e' behind each option.
+
+## D - API
+
+In order to facilitate the use of the sniffer and allow remote control, here are the different API paths
+
+- **[GET]** _/api_: Access the API documentation based on Swagger (Possitibilty to perform test) (Not configured at this time)
+
+- **[GET]** _/api/configuration_: Return the last sniffer configuration as a JSON.
+
+- **[POST]** _/api/configuration_: Allow the possibility to send a configuration.
+
+Example of JSON to send:
+
+```
+{
+    "capture": {
+        "CAPTURE_CNX_TYPE": "Cable-pc",
+        "CAPTURE_DESCRIPTION": "description test",
+        "CAPTURE_DURATION": 10,
+        "CAPTURE_NAME": "capture"
+    },
+    "database": {
+        "DB": "Pandore",
+        "DB_HOST": "192.168.100.10",
+        "DB_PASSWORD": "my-secret-pw",
+        "DB_PORT": 3306,
+        "DB_USER": "root"
+    },
+    "network": {
+        "AUDITED_INTERFACE": "Ethernet",
+        "CUSTOM_FILTER": "not port 1194 and not port 3306",
+        "DEVICE_NETWORK": "192.168.10.0/24"
+    }
+}
+```
+
+If you want, you can only update one or several field(s):
+```
+{
+    "network": {
+        "AUDITED_INTERFACE": "Ethernet2"
+    }
+}
+```
+
+- **[POST]** _/api/start_: Start a sniffer (no JSON to send, only use POST method). Multiple sniffer can be launched at the same time. Sniffer is launched using the last configuration (The config you get usinf /api/configuration)
+
+- **[POST]** _/api/stop_: Stop the sniffer
+
+Example to stop the capture with ID 109:
+```
+{
+    "CaptureID":"109"
+}
+```
+If there is only one sniffer, you can only send a stop command in POST, and sniffer will kill the alone running sniffer.
+
+- **[GET]** _/api/status_: return the number of running thread. This command will evolve is a close future.
 
 ---------------------------------------
