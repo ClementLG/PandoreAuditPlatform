@@ -60,6 +60,8 @@ class PandoreAnalytics:
             try:
                 if(configuration.getStopAnalytics()): break
 
+                print("IP = " + server.Address)
+
                 domain_name = None
 
                 if (ipaddress.ip_address(server.Address).is_private):
@@ -74,10 +76,8 @@ class PandoreAnalytics:
                     else:
                         bestMatch = None
                         for i in range(len(dictionnary_keywords)):
-                            print("new regex")
                             res = re.search(dictionnary_keywords[i].Value, domain_name)
                             if res:
-                                print("match")
                                 if bestMatch is None:
                                     bestMatch = dictionnary_keywords[i]
                                 else:
@@ -85,7 +85,9 @@ class PandoreAnalytics:
                                         bestMatch = dictionnary_keywords[i]
                         if bestMatch is not None:
                             server.Service = bestMatch.Service
- 
+                else:
+                    print("no domain name")
+
                 configuration.incrementNumberOfProcessedServers()
                 if server.Service is not None:
                     db = pandoreDB.PandoreDB()
