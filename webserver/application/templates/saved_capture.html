@@ -49,56 +49,81 @@
         </header>
         <content>
             <div class="container-fluid px-5 py-5">
-                <div class="card shadow mb-3">
-                    <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
-                        <div class="row">
-                            <span class="bi bi-info-circle" style="font-size: 30px;">
-                                Capture information
-                            </span>
+                <div class="row">
+                    <div class="col-sm-8 mb-3">
+                        <div class="card shadow mb-3">
+                            <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
+                                <div class="row mb-5">
+                                    <span class="bi bi-info-circle" style="font-size: 30px;">
+                                        Capture information
+                                    </span>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-4 mb-3">
+                                        <strong>Name : </strong><span class="text-secondary">{{capture.Name}}</span>
+                                    </div>
+                                    <div class="col-sm-4 mb-3">
+                                        <strong>Start time : </strong><span class="text-secondary">{{capture.StartTime.strftime('%d/%m/%Y %H:%M:%S')}}</span>
+                                    </div>
+                                    <div class="col-sm-4 mb-3">
+                                        <strong>Duration : </strong><span class="text-secondary">{{duration}}</span>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-4 mb-3">
+                                        <strong>Description : </strong><span class="text-secondary">{{capture.Description}}</span>
+                                    </div>
+                                    <div class="col-sm-4 mb-3">
+                                        <strong>Connection type : </strong><span class="text-secondary">{{capture.ConnectionType}}</span>
+                                    </div>
+                                    <div class="col-sm-4 mb-3">
+                                        <strong>Interface : </strong><span class="text-secondary">{{capture.Interface}}</span>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-4 mb-3">
+                                        <strong>Total download : </strong><span class="text-imt-blue">{{down_trafic}}</span>
+                                    </div>
+                                    <div class="col-sm-4 mb-3">
+                                        <strong>Total upload : </strong><span class="text-imt-green">{{up_trafic}}</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="row mt-5 px-5">
-                            <div class="col-sm-3 px-5 mb-5">
-                                <h6 class="">Name</h6>
-                                <hr />
-                                <h5 class="mt-2 text-imt-blue">{{capture.Name}}</h5>
-                            </div>
-                            <div class="col-sm-3 px-5 mb-5">
-                                <h6 class="">Start date time</h6>
-                                <hr />
-                                <h5 class="mt-2 text-imt-green">{{capture.StartTime.strftime('%d/%m/%Y %H:%M:%S')}}</h5>
-                                <p>(dd/MM/yyyy HH:mm:ss)</p>
-                            </div>
-                            <div class="col-sm-3 px-5">
-                                <h6 class="">Duration</h6>
-                                <hr />
-                                <h5 class="mt-2 text-imt-blue">{{duration}}</h5>
-                                <p>(hh:mm:ss)</p>
-                            </div>
-                            <div class="col-sm-3 px-5">
-                                <h6 class="">Score</h6>
-                                <hr />
-                                <span class="badge" style="background-color: rgba(0, 150, 0, {{ 1 if score == "A" else 0.2}});"><p class="h{{ "1" if score == "A" else "3"}} text-white">A</p></span>
-                                <span class="badge" style="background-color: rgba(103, 141, 0, {{ 1 if score == "B" else 0.2}});"><p class="h{{ "1" if score == "B" else "3"}} text-white">B</p></span>
-                                <span class="badge" style="background-color: rgba(161, 123, 0, {{ 1 if score == "C" else 0.2}});"><p class="h{{ "1" if score == "C" else "3"}} text-white">C</p></span>
-                                <span class="badge" style="background-color: rgba(212, 92, 0, {{ 1 if score == "D" else 0.2}});"><p class="h{{ "1" if score == "D" else "3"}} text-white">D</p></span>
-                                <span class="badge" style="background-color: rgba(255, 0, 0, {{ 1 if score == "E" else 0.2}});"><p class="h{{ "1" if score == "E" else "3"}} text-white">E</p></span>
-                            </div>
-                        </div>
-                        <div class="row mt-5 px-5">
-                            <div class="col-sm-4 px-5 mb-5">
-                                <h6 class="">Description</h6>
-                                <hr />
-                                <h5 class="mt-2 text-imt-green">{{capture.Description}}</h5>
-                            </div>
-                            <div class="col-sm-4 px-5 mb-5">
-                                <h6 class="">Total download</h6>
-                                <hr />
-                                <h5 class="mt-2 text-imt-blue">{{down_trafic}} <sub>{{down_unit}}</sub></h5>
-                            </div>
-                            <div class="col-sm-4 px-5">
-                                <h6 class="">Total upload</h6>
-                                <hr />
-                                <h5 class="mt-2 text-imt-green">{{up_trafic}} <sub>{{up_unit}}</sub></h5>
+                    </div>
+                    <div class="col-sm-4 mb-3">
+                        <div class="card shadow mb-3">
+                            <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
+                                <div class="row mb-5">
+                                    <div class="col-sm">
+                                        <span class="bi bi-trophy" style="font-size: 30px;">
+                                            Score
+                                        </span>
+                                    </div>
+                                    <div class="col-sm-auto">
+                                        <span class="badge" style="background-color: rgba(0, 150, 0, {{ 1 if score_details["Score"] == "A" else 0.2}});"><h{{ "1" if score_details["Score"]== "A" else "3"}} class="text-white">A</h{{ "1" if score_details["Score"]== "A" else "3"}}></span>
+                                        <span class="badge" style="background-color: rgba(103, 141, 0, {{ 1 if score_details["Score"] == "B" else 0.2}});"><h{{ "1" if score_details["Score"]== "B" else "3"}} class="text-white">B</h{{ "1" if score_details["Score"]== "B" else "3"}}></span>
+                                        <span class="badge" style="background-color: rgba(161, 123, 0, {{ 1 if score_details["Score"] == "C" else 0.2}});"><h{{ "1" if score_details["Score"]== "C" else "3"}} class="text-white">C</h{{ "1" if score_details["Score"]== "C" else "3"}}></span>
+                                        <span class="badge" style="background-color: rgba(212, 92, 0, {{ 1 if score_details["Score"] == "D" else 0.2}});"><h{{ "1" if score_details["Score"]== "D" else "3"}} class="text-white">D</h{{ "1" if score_details["Score"]== "D" else "3"}}></span>
+                                        <span class="badge" style="background-color: rgba(255, 0, 0, {{ 1 if score_details["Score"] == "E" else 0.2}});"><h{{ "1" if score_details["Score"]== "E" else "3"}} class="text-white">E</h{{ "1" if score_details["Score"]== "E" else "3"}}></span>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-6 mb-3">
+                                        <strong>Bandwidth : </strong><span class="text-secondary">{{score_details["Bandwidth"]}}</span>
+                                    </div>
+                                    <div class="col-sm-6 mb-3">
+                                        <strong>Number of contacted servers : </strong><span class="text-secondary">{{score_details["Diversity"]}}</span>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-sm-6 mb-3">
+                                        <strong>Number of connection/deconnection : </strong><span class="text-secondary">{{score_details["NumberOfDeconnection"]}}</span>
+                                    </div>
+                                    <div class="col-sm-6 mb-3">
+                                        <strong>Mean deconnection time : </strong><span class="text-secondary">{{score_details["MeanDeconnectionTime"]}}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -108,7 +133,7 @@
                     <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
                         <div class="row">
                             <span class="bi bi-graph-up" style="font-size: 30px;">
-                                Requests history
+                                Packets history
                             </span>
                         </div>
                         <div class="row mt-5 px-5">
@@ -245,13 +270,13 @@
     categoryAxis.renderer.minGridDistance = 50;
 
     var valueAxis = chart.yAxes.push(new am4charts.ValueAxis());
-    valueAxis.title.text = "Number of requests";
+    valueAxis.title.text = "Number of packets";
 
     // Create series
     var series = chart.series.push(new am4charts.ColumnSeries());
     series.dataFields.valueY = "nbreq";
     series.dataFields.categoryX = "time";
-    series.name = "Number of requests";
+    series.name = "Number of packets";
     series.tooltipText = "{name}: [bold]{valueY}[/]";
     series.stacked = true;
     series.columns.template.fill = am4core.color('#afcb37');
@@ -271,13 +296,13 @@
     chart.data = [
         {% for stat in stats %}
     {
-        {% if stat[0] %}
-        category: "{{stat[0]}}",
+        {% if stat.ServiceName %}
+        category: "{{stat.ServiceName}}",
             {% else %}
     category: "Unknown",
         {% endif %}
-    value1: {{ stat[2] }},
-    value2: {{ stat[1] }}
+    value1: {{ stat.DownTrafic }},
+    value2: {{ stat.UpTrafic }}
                 } {%if stat != stats[(stats | length) - 1] %}, {% endif %}
     {% endfor %}
     ];

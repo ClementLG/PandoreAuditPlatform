@@ -24,7 +24,6 @@ class PandoreCapture():
 
 class PandoreConfiguration():
 
-    ANALYTICS_TIMEOUT: int
     NUTRISCORE_REFERENCE_FREQUENCY: int
     NUTRISCORE_REFERENCE_DEBIT: float
     NUTRISCORE_REFERENCE_DIVERSITY: int
@@ -35,8 +34,7 @@ class PandoreConfiguration():
     NUTRISCORE_AVERAGE_TYPE: int
     SNIFFER_API_ADDRESS: str
 
-    def __init__(self, ANALYTICS_TIMEOUT: int, NUTRISCORE_REFERENCE_FREQUENCY: int, NUTRISCORE_REFERENCE_DEBIT: float, NUTRISCORE_REFERENCE_DIVERSITY: int, NUTRISCORE_WEIGHT_FREQUENCY: int, NUTRISCORE_WEIGHT_DEBIT: int, NUTRISCORE_WEIGHT_DIVERSITY: int, NUTRISCORE_SIGMOIDE_SLOPE: float, NUTRISCORE_AVERAGE_TYPE: int, SNIFFER_API_ADDRESS: str) -> None:
-        self.ANALYTICS_TIMEOUT = ANALYTICS_TIMEOUT
+    def __init__(self, NUTRISCORE_REFERENCE_FREQUENCY: int, NUTRISCORE_REFERENCE_DEBIT: float, NUTRISCORE_REFERENCE_DIVERSITY: int, NUTRISCORE_WEIGHT_FREQUENCY: int, NUTRISCORE_WEIGHT_DEBIT: int, NUTRISCORE_WEIGHT_DIVERSITY: int, NUTRISCORE_SIGMOIDE_SLOPE: float, NUTRISCORE_AVERAGE_TYPE: int, SNIFFER_API_ADDRESS: str) -> None:
         self.NUTRISCORE_REFERENCE_FREQUENCY = NUTRISCORE_REFERENCE_FREQUENCY
         self.NUTRISCORE_REFERENCE_DEBIT = NUTRISCORE_REFERENCE_DEBIT
         self.NUTRISCORE_REFERENCE_DIVERSITY = NUTRISCORE_REFERENCE_DIVERSITY
@@ -51,12 +49,10 @@ class PandoreService():
 
     ID: int
     Name: str
-    Priority: int
 
-    def __init__(self, ID: int, Name: str, Priority: int) -> None:
+    def __init__(self, ID: int, Name: str) -> None:
         self.ID = ID
         self.Name = Name
-        self.Priority = Priority
 
 class PandoreServiceKeyword():
     ID: int
@@ -137,3 +133,13 @@ class PandoreAnalyticsServiceKeywords():
     def __init__(self, Service: PandoreService, Regex: str) -> None:
         self.Service = Service
         self.Regex = Regex
+
+class PandoreServiceStat():
+    ServiceName: str
+    UpTrafic : float
+    DownTrafic: float
+
+    def __init__(self, ServiceName: str, UpTrafic: float, DownTrafic: float) -> None:
+        self.ServiceName = ServiceName
+        self.UpTrafic = UpTrafic
+        self.DownTrafic = DownTrafic

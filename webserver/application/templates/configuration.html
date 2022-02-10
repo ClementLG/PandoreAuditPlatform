@@ -70,11 +70,21 @@
                                     </div>
                                     <div class="col-sm-4">
                                         <div class="mb-3">
-                                            <label for="analytics_timeout" class="form-label"><strong>Server automatic classification timeout</strong></label>
-                                            <input type="number" class="form-control" id="analytics_timeout" name="analytics_timeout" aria-describedby="analytics_timeout_help" min="1" step="1" value="{{config.ANALYTICS_TIMEOUT}}" required>
-                                            <div id="analytics_timeout_help" class="form-text">Maximum time in seconds to spend trying to find server associated service</div>
+                                            <label for="nutriscore_average_type" class="form-label"><strong>Nutriscore global score average type</strong></label>
+                                            <select class="form-select" id="nutriscore_average_type" name="nutriscore_average_type" required>
+                                                <option value="0" {{"selected" if config.NUTRISCORE_AVERAGE_TYPE != 1}}>Arithmetic</option>
+                                                <option value="1" {{"selected" if config.NUTRISCORE_AVERAGE_TYPE == 1}}>Harmonic</option>
+                                            </select>
                                         </div>
                                     </div>
+                                    <div class="col-sm-4">
+                                        <div class="mb-3">
+                                            <label for="nutriscore_sigmoide_slope" class="form-label"><strong>Nutriscore sigmoide slope</strong></label>
+                                            <input type="number" class="form-control" id="nutriscore_sigmoide_slope" name="nutriscore_sigmoide_slope" min="0.01" max="1" step="0.01" value="{{config.NUTRISCORE_SIGMOIDE_SLOPE}}" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
                                     <div class="col-sm-4">
                                         <div class="mb-3">
                                             <label for="nutriscore_reference_frequency" class="form-label"><strong>Nutriscore reference value for frequency indicator</strong></label>
@@ -82,8 +92,6 @@
                                             <div id="nutriscore_reference_frequency_help" class="form-text">Reference mean time in seconds between two UE connections</div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="row">
                                     <div class="col-sm-4">
                                         <div class="mb-3">
                                             <label for="nutriscore_reference_debit" class="form-label"><strong>Nutriscore reference value for debit indicator</strong></label>
@@ -98,14 +106,14 @@
                                             <div id="nutriscore_reference_diversity_help" class="form-text">Reference number of distincts servers</div>
                                         </div>
                                     </div>
+                                </div>
+                                <div class="row">
                                     <div class="col-sm-4">
                                         <div class="mb-3">
                                             <label for="nutriscore_weight_frequency" class="form-label"><strong>Nutriscore frequency indicator coefficient for global score</strong></label>
                                             <input type="number" class="form-control" id="nutriscore_weight_frequency" name="nutriscore_weight_frequency" min="1" step="1" value="{{config.NUTRISCORE_WEIGHT_FREQUENCY}}" required>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="row">
                                     <div class="col-sm-4">
                                         <div class="mb-3">
                                             <label for="nutriscore_weight_debit" class="form-label"><strong>Nutriscore debit indicator coefficient for global score</strong></label>
@@ -117,29 +125,6 @@
                                             <label for="nutriscore_weight_diversity" class="form-label"><strong>Nutriscore diversity indicator coefficient for global score</strong></label>
                                             <input type="number" class="form-control" id="nutriscore_weight_diversity" name="nutriscore_weight_diversity" min="1" step="1" value="{{config.NUTRISCORE_WEIGHT_DIVERSITY}}" required>
                                         </div>
-                                    </div>
-                                    <div class="col-sm-4">
-                                        <div class="mb-3">
-                                            <label for="nutriscore_sigmoide_slope" class="form-label"><strong>Nutriscore sigmoide slope</strong></label>
-                                            <input type="number" class="form-control" id="nutriscore_sigmoide_slope" name="nutriscore_sigmoide_slope" min="0.01" max="1" step="0.01" value="{{config.NUTRISCORE_SIGMOIDE_SLOPE}}" required>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-sm-4">
-                                        <div class="mb-3">
-                                            <label for="nutriscore_average_type" class="form-label"><strong>Nutriscore global score average type</strong></label>
-                                            <select class="form-select" id="nutriscore_average_type" name="nutriscore_average_type" required>
-                                                <option value="0" {{"selected" if config.NUTRISCORE_AVERAGE_TYPE != 1}}>Arithmetic</option>
-                                                <option value="1" {{"selected" if config.NUTRISCORE_AVERAGE_TYPE == 1}}>Harmonic</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-4">
-
-                                    </div>
-                                    <div class="col-sm-4">
-
                                     </div>
                                 </div>
                                 <div class="text-end">
@@ -257,29 +242,21 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <form method="post">
-                    <input type="hidden" name="actionType" id="actionType" value="assignServerServiceDNS">
+                    <input type="hidden" name="actionType" id="actionType" value="assignServerDNS">
                     <input type="hidden" name="assignServerID" id="assignServerID" value="">
                     <input type="hidden" name="assignServerAddress" id="assignServerAddress" value="">
                     <div class="modal-header">
-                        <h5 class="modal-title">Assign server to service</h5>
+                        <h5 class="modal-title">Assign server to domain name</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="text-danger mb-3"><p><strong>Please assign the following server to an existing service and DNS</strong></p></div>
+                        <div class="text-danger mb-3"><p><strong>Please assign the following server to an existing domain name</strong></p></div>
                         <div class="mb-3">
                             <div id="assignServerValue"></div>
                         </div>
                         <div class="mb-3">
-                            <label for="assignServerService"><strong>Service : </strong></label>
-                            <select class="selectpicker form-control" id="assignServerService" name="assignServerService" data-live-search="true" title="Select a service...">
-                                {% for service in allServices %}
-                                <option value="{{ service.ID }}">{{ service.Name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="assignServerDNS"><strong>DNS : </strong></label>
-                            <select class="selectpicker form-control" id="assignServerDNS" name="assignServerDNS" data-live-search="true" title="Select a DNS...">
+                            <label for="assignServerDNS"><strong>Domain name : </strong></label>
+                            <select class="selectpicker form-control" id="assignServerDNS" name="assignServerDNS" data-live-search="true" title="Select a domain name...">
                                 {% for dns in allDNS %}
                                 <option value="{{ dns.ID }}">{{ dns.Value }}</option>
                                 {% endfor %}

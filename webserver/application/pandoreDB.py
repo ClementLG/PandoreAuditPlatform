@@ -1,5 +1,5 @@
-from typing import Optional
 import mysql.connector
+from typing import Optional
 from application import configuration, pandoreException
 from application.models import *
 from datetime import datetime
@@ -14,7 +14,7 @@ class PandoreDB:
             port=configuration.DB_PORT,
             database=configuration.DB
         )
-        self.cursor = self.conn.cursor()
+        self.cursor = self.conn.cursor(dictionary=True)
 
     # Other
     def close_db(self):
@@ -25,11 +25,30 @@ class PandoreDB:
         self.cursor.callproc('ReadConfiguration')
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                return PandoreConfiguration(int(res[0]), int(res[1]), float(res[2]), int(res[3]), int(res[4]), int(res[5]), int(res[6]), float(res[7]), int(res[8]), str(res[9]))
+                return PandoreConfiguration(
+                    int(res["NUTRISCORE_REFERENCE_FREQUENCY"]), 
+                    float(res["NUTRISCORE_REFERENCE_DEBIT"]), 
+                    int(res["NUTRISCORE_REFERENCE_DIVERSITY"]), 
+                    int(res["NUTRISCORE_WEIGHT_FREQUENCY"]), 
+                    int(res["NUTRISCORE_WEIGHT_DEBIT"]), 
+                    int(res["NUTRISCORE_WEIGHT_DIVERSITY"]), 
+                    float(res["NUTRISCORE_SIGMOIDE_SLOPE"]), 
+                    int(res["NUTRISCORE_AVERAGE_TYPE"]), 
+                    str(res["SNIFFER_API_ADDRESS"]))
         return None
 
     def update_configuration(self, config: PandoreConfiguration) -> None:
-        self.cursor.callproc('UpdateConfiguration', [config.ANALYTICS_TIMEOUT, config.NUTRISCORE_REFERENCE_FREQUENCY, config.NUTRISCORE_REFERENCE_DEBIT, config.NUTRISCORE_REFERENCE_DIVERSITY, config.NUTRISCORE_WEIGHT_FREQUENCY, config.NUTRISCORE_WEIGHT_DEBIT, config.NUTRISCORE_WEIGHT_DIVERSITY, config.NUTRISCORE_SIGMOIDE_SLOPE, config.NUTRISCORE_AVERAGE_TYPE, config.SNIFFER_API_ADDRESS])
+        self.cursor.callproc('UpdateConfiguration', [
+            config.NUTRISCORE_REFERENCE_FREQUENCY, 
+            config.NUTRISCORE_REFERENCE_DEBIT, 
+            config.NUTRISCORE_REFERENCE_DIVERSITY, 
+            config.NUTRISCORE_WEIGHT_FREQUENCY, 
+            config.NUTRISCORE_WEIGHT_DEBIT, 
+            config.NUTRISCORE_WEIGHT_DIVERSITY, 
+            config.NUTRISCORE_SIGMOIDE_SLOPE, 
+            config.NUTRISCORE_AVERAGE_TYPE, 
+            config.SNIFFER_API_ADDRESS
+            ])
         self.conn.commit()
 
     # Capture
@@ -38,11 +57,29 @@ class PandoreDB:
         self.cursor.callproc('ReadRunningCapture')
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                captures.append(PandoreCapture(int(res[0]), str(res[1]), res[2], res[3] or None, str(res[4]), str(res[5]), str(res[6]), int(res[7])))
+                captures.append(PandoreCapture(
+                    int(res["Capture_ID"]), 
+                    str(res["Capture_Name"]), 
+                    res["Capture_StartTime"], 
+                    res["Capture_EndTime"] or None, 
+                    str(res["Capture_Description"]), 
+                    str(res["Capture_Interface"]), 
+                    str(res["Capture_ConnectionType"]), 
+                    int(res["Capture_UE_Inactivity_Timeout"])
+                    ))
         return captures
 
     def update_capture(self, capture: PandoreCapture) -> None:
-        self.cursor.callproc('UpdateCapture', [capture.ID, capture.Name, capture.StartTime, capture.EndTime, capture.Description, capture.Interface, capture.ConnectionType, capture.InactivityTimeout])
+        self.cursor.callproc('UpdateCapture', [
+            capture.ID, 
+            capture.Name, 
+            capture.StartTime, 
+            capture.EndTime, 
+            capture.Description, 
+            capture.Interface, 
+            capture.ConnectionType, 
+            capture.InactivityTimeout
+            ])
         self.conn.commit()
 
     def find_saved_captures(self) -> list[PandoreCapture]:
@@ -50,7 +87,16 @@ class PandoreDB:
         self.cursor.callproc('ReadSavedCaptures')
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                captures.append(PandoreCapture(int(res[0]), str(res[1]), res[2], res[3] or None, str(res[4]), str(res[5]), str(res[6]), int(res[7])))
+                captures.append(PandoreCapture(
+                    int(res["Capture_ID"]), 
+                    str(res["Capture_Name"]), 
+                    res["Capture_StartTime"], 
+                    res["Capture_EndTime"] or None, 
+                    str(res["Capture_Description"]), 
+                    str(res["Capture_Interface"]), 
+                    str(res["Capture_ConnectionType"]), 
+                    int(res["Capture_UE_Inactivity_Timeout"])
+                    ))
         return captures
 
     def find_capture_by_id(self, id: int) -> PandoreCapture:
@@ -59,28 +105,39 @@ class PandoreDB:
         self.cursor.callproc('ReadCaptureByID', [int(id)])
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                return PandoreCapture(int(res[0]), str(res[1]), res[2], res[3] or None, str(res[4]), str(res[5]), str(res[6]), int(res[7]))
+                return PandoreCapture(
+                    int(res["Capture_ID"]), 
+                    str(res["Capture_Name"]), 
+                    res["Capture_StartTime"], 
+                    res["Capture_EndTime"] or None, 
+                    str(res["Capture_Description"]), 
+                    str(res["Capture_Interface"]), 
+                    str(res["Capture_ConnectionType"]), 
+                    int(res["Capture_UE_Inactivity_Timeout"])
+                    )
         return res[0]
 
-    def get_capture_service_stat(self, id: int):
+    def get_capture_service_stat(self, id: int) -> list[PandoreServiceStat]:
+        stats = []
         self.cursor.callproc('ReadCaptureServicesStats', [int(id)])
         for result in self.cursor.stored_results():
-            res = result.fetchall()
-        return res
+            for res in result.fetchall():
+                stats.append(PandoreServiceStat(
+                    res["Service_Name"],
+                    float(res["UpTrafic"]),
+                    float(res["DownTrafic"])
+                    ))
+        return stats
 
     def get_capture_total_trafic(self, id: int):
-        trafic = []
+        trafic = {"Up": 0, "Down": 0}
         self.cursor.callproc('ReadCaptureTotalTrafic', [int(id)])
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                if res[0] is None:
-                    trafic.append(0)
-                else:
-                    trafic.append(int(res[0]))
-                if res[1] is None:
-                    trafic.append(0)
-                else:
-                    trafic.append(int(res[1]))
+                if res["DOWN"] is not None:
+                    trafic["Down"] = int(res["DOWN"])
+                if res["UP"] is not None:
+                    trafic["Up"] = int(res["UP"])
         return trafic
 
     # Capture request
@@ -89,7 +146,15 @@ class PandoreDB:
         self.cursor.callproc('ReadRequestsByCaptureID', [int(id), 0])
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                    requests.append(PandoreCaptureRequest(int(res[0]), int(res[1]), bool(res[2]), res[3], str(res[4]), self.find_server_by_id(int(res[5])), self.find_capture_by_id(int(res[6]))))
+                    requests.append(PandoreCaptureRequest(
+                        int(res["CaptureRequest_ID"]),
+                        int(res["CaptureRequest_PacketSize"]), 
+                        bool(res["CaptureRequest_Direction"]), 
+                        res["CaptureRequest_DateTime"], 
+                        str(res["CaptureRequest_Protocol"]), 
+                        self.find_server_by_id(int(res["CaptureRequest_Server"])), 
+                        self.find_capture_by_id(int(res["CaptureRequest_Capture"]))
+                        ))
         return requests
 
     def find_all_capture_request_not_detailed(self, id: int) -> list[PandoreCaptureRequestNotDetailed]:
@@ -97,7 +162,16 @@ class PandoreDB:
         self.cursor.callproc('ReadRequestsByCaptureID', [int(id), 1])
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                requests.append(PandoreCaptureRequestNotDetailed(int(res[0]), int(res[1]), bool(res[2]), res[3], str(res[4]), str(res[8]), res[12], int(res[6])))
+                requests.append(PandoreCaptureRequestNotDetailed(
+                    int(res["CaptureRequest_ID"]), 
+                    int(res["CaptureRequest_PacketSize"]), 
+                    bool(res["CaptureRequest_Direction"]), 
+                    res["CaptureRequest_DateTime"], 
+                    str(res["CaptureRequest_Protocol"]), 
+                    str(res["Server_Address"]), 
+                    str(res["DNS_Value"]), 
+                    int(res["CaptureRequest_Capture"])
+                    ))
         
         return sorted(requests, key=lambda request: request.DateTime)
 
@@ -107,7 +181,7 @@ class PandoreDB:
         self.cursor.callproc('ReadAllDNS')
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                DNSs.append(PandoreDNS(int(res[0]), str(res[1])))
+                DNSs.append(PandoreDNS(int(res["DNS_ID"]), str(res["DNS_Value"])))
         return DNSs
 
     def find_dns_by_id(self, id: int) -> Optional[PandoreDNS]:
@@ -116,7 +190,7 @@ class PandoreDB:
         self.cursor.callproc('ReadDNSByID', [int(id)])
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                return PandoreDNS(int(res[0]), str(res[1]))
+                return PandoreDNS(int(res["DNS_ID"]), str(res["DNS_Value"]))
         return None
 
     def find_dns_by_value(self, value: str) -> Optional[PandoreDNS]:
@@ -125,7 +199,7 @@ class PandoreDB:
         self.cursor.callproc('ReadDNSByValue', [value])
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                return PandoreDNS(int(res[0]), str(res[1]))
+                return PandoreDNS(int(res["DNS_ID"]), str(res["DNS_Value"]))
         return None
 
     def create_dns(self, dns: PandoreDNS) -> None:
@@ -145,7 +219,12 @@ class PandoreDB:
         self.cursor.callproc('ReadIncompleteServers')
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                servers.append(PandoreServer(int(res[0]), str(res[1]), self.find_dns_by_id(res[3]), self.find_service_by_id(res[2])))
+                servers.append(PandoreServer(
+                    int(res["Server_ID"]), 
+                    str(res["Server_Address"]), 
+                    self.find_dns_by_id(res["Server_DNS"]), 
+                    self.find_service_by_id(res["Server_Service"])
+                    ))
         return servers
    
     def find_server_by_id(self, id: int) -> Optional[PandoreServer]:
@@ -154,7 +233,12 @@ class PandoreDB:
         self.cursor.callproc('ReadServerByID', [int(id)])
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                return PandoreServer(int(res[0]), str(res[1]), self.find_dns_by_id(res[2]), self.find_service_by_id(res[3]))
+                return PandoreServer(
+                    int(res["Server_ID"]), 
+                    str(res["Server_Address"]), 
+                    self.find_dns_by_id(res["Server_DNS"]), 
+                    self.find_service_by_id(res["Server_Service"])
+                    )
         return None
 
     def find_server_by_address(self, address: str) -> Optional[PandoreServer]:
@@ -163,7 +247,12 @@ class PandoreDB:
         self.cursor.callproc('ReadServerByAddress', [address])
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                return PandoreServer(int(res[0]), str(res[1]), self.find_dns_by_id(res[2]), self.find_service_by_id(res[3]))
+                return PandoreServer(
+                    int(res["Server_ID"]), 
+                    str(res["Server_Address"]), 
+                    self.find_dns_by_id(res["Server_DNS"]), 
+                    self.find_service_by_id(res["Server_Service"])
+                    )
         return None
 
     def create_server_dns(self, service: PandoreService, ip: str, domain_name: str) -> None:
@@ -216,7 +305,12 @@ class PandoreDB:
             if(existingServer and existingServer.ID != server.ID):
                 raise pandoreException.PandoreException("This server address already exists")
             else:
-                self.cursor.callproc('UpdateServer', [server.ID, server.Address, None if server.Service is None else server.Service.ID, None if server.DNS is None else server.DNS.ID])
+                self.cursor.callproc('UpdateServer', [
+                    server.ID, 
+                    server.Address, 
+                    None if server.Service is None else server.Service.ID, 
+                    None if server.DNS is None else server.DNS.ID
+                    ])
                 self.conn.commit()
 
     # Service
@@ -225,7 +319,10 @@ class PandoreDB:
         self.cursor.callproc('ReadAllServices')
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                services.append(PandoreService(int(res[0]), str(res[1]), int(res[2])))
+                services.append(PandoreService(
+                    int(res["Service_ID"]), 
+                    str(res["Service_Name"])
+                    ))
         return services
 
     def find_service_by_id(self, id: int) -> Optional[PandoreService]:
@@ -234,7 +331,10 @@ class PandoreDB:
         self.cursor.callproc('ReadServiceByID', [int(id)])
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                return PandoreService(int(res[0]), str(res[1]), int(res[2]))
+                return PandoreService(
+                    int(res["Service_ID"]), 
+                    str(res["Service_Name"])
+                    )
         return None
 
     def find_service_by_name(self, name: str) -> Optional[PandoreService]:
@@ -243,7 +343,10 @@ class PandoreDB:
         self.cursor.callproc('ReadServiceByName', [name])
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                return PandoreService(int(res[0]), str(res[1]), int(res[2]))
+                return PandoreService(
+                    int(res["Service_ID"]), 
+                    str(res["Service_Name"])
+                    )
         return None
 
     def find_service_all_servers(self, id: int, details: bool) -> list[PandoreServer]:
@@ -252,7 +355,12 @@ class PandoreDB:
         self.cursor.callproc('ReadServersByServiceID', [id, details])
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                servers.append(PandoreServer(int(res[0]), str(res[1]), self.find_dns_by_id(res[2]), service))
+                servers.append(PandoreServer(
+                    int(res["Server_ID"]), 
+                    str(res["Server_Address"]), 
+                    self.find_dns_by_id(res["Server_DNS"]), 
+                    service
+                    ))
         return servers
 
     def create_service(self, service: PandoreService) -> None:
@@ -286,7 +394,10 @@ class PandoreDB:
             if checkService and checkService.ID != service.ID:
                 raise pandoreException.PandoreException("This service name is already used")
             else:
-                self.cursor.callproc('UpdateService', [service.ID, service.Name, service.Priority])
+                self.cursor.callproc('UpdateService', [
+                    service.ID, 
+                    service.Name
+                    ])
                 self.conn.commit()
 
     # ServiceKeyword
@@ -295,7 +406,11 @@ class PandoreDB:
         self.cursor.callproc('ReadAllServiceKeyword', [])
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                keywords.append(PandoreServiceKeyword(int(res[0]), str(res[1]), PandoreService(int(res[2]), str(res[4]), 0)))
+                keywords.append(PandoreServiceKeyword(
+                    int(res["ServiceKeyword_ID"]), 
+                    str(res["ServiceKeyword_Value"]), 
+                    PandoreService(int(res["Service_ID"]), str(res["Service_Name"]))
+                    ))
         return keywords
 
     def find_all_keyword_by_service(self, id: int) -> list[PandoreServiceKeyword]:
@@ -310,7 +425,11 @@ class PandoreDB:
                 self.cursor.callproc('ReadServiceKeywordByService', [service.ID])
                 for result in self.cursor.stored_results():
                     for res in result.fetchall():
-                        keywords.append(PandoreServiceKeyword(int(res[0]), str(res[1]), service))
+                        keywords.append(PandoreServiceKeyword(
+                            int(res["ServiceKeyword_ID"]), 
+                            str(res["ServiceKeyword_Value"]), 
+                            service
+                            ))
         return keywords
 
     def create_service_keyword(self, keyword: PandoreServiceKeyword) -> None:
@@ -319,7 +438,10 @@ class PandoreDB:
         elif len(keyword.Value) > 255:
             raise pandoreException.PandoreException("Keyword value can't exceed 255 characters")
         else:
-            self.cursor.callproc('CreateServiceKeyword', [str(keyword.Value), keyword.Service.ID])
+            self.cursor.callproc('CreateServiceKeyword', [
+                str(keyword.Value), 
+                keyword.Service.ID
+                ])
             self.conn.commit()
 
     def delete_keyword(self, keyword: PandoreServiceKeyword) -> None:

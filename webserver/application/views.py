@@ -1,14 +1,9 @@
-from flask import Flask, request, redirect, url_for, render_template, json, session
+from flask import Flask, request, redirect, url_for, render_template, json
 from datetime import datetime
-from application import app, pandoreDB, pandoreException, configuration, utils
+from application import app, pandoreDB, pandoreException, utils
 from application.pandore_analytics import PandoreAnalytics
 from application.models import *
 import requests, math
-
-analytics_running = False
-current_analytic_number = 0
-current_analytic_number_servers = 0
-stop_analytics_running = False
 
 PandoreAnalyticsRunner = PandoreAnalytics()
 
@@ -31,6 +26,7 @@ def index():
                     if 'capture_name' not in request.form: raise pandoreException.PandoreException("Capture name is missing")
                     if 'capture_description' not in request.form: raise pandoreException.PandoreException("Capture description is missing")
                     if 'capture_connection_type' not in request.form: raise pandoreException.PandoreException("Connection type is missing")
+                    if 'interface_name' not in request.form: raise pandoreException.PandoreException("Interface name is missing")
                     if 'interface_name' not in request.form: raise pandoreException.PandoreException("Interface name is missing")
                     if 'capture_duration' not in request.form: raise pandoreException.PandoreException("Capture duration is missing")
                     if 'ip_w' not in request.form: raise pandoreException.PandoreException("IP is incomplete")
@@ -166,17 +162,10 @@ def service(id):
         serviceInfo = db.find_service_by_id(id)
         serversInfo = db.find_service_all_servers(id, True)
         keywordList = db.find_all_keyword_by_service(id)
-        serviceList = db.find_all_services()
-        serviceList.sort(key=lambda x: x.Priority)
 
         if(request.method == 'POST'):
             if(id == db.find_service_by_name("Intranet service").ID):
                 raise pandoreException.PandoreException("You can't edit or delete this service")
-
-            if(request.form['actionType'] == 'addServer'):
-                if(len(request.values) < 2 or len(request.values) > 3): raise pandoreException.PandoreException("Invalid number of arguments");
-                db.create_server_dns(db.find_service_by_id(id), request.form['addServerValue'], request.form['addServerDNS'] or None)
-                serversInfo = db.find_service_all_servers(id, True)
             elif(request.form['actionType'] == 'removeServer'):
                 if(len(request.values) != 2): raise pandoreException.PandoreException("Invalid number of arguments");
                 db.remove_service_from_server(int(request.form['removeServerID']))
@@ -191,13 +180,11 @@ def service(id):
                 keywordList = db.find_all_keyword_by_service(id)
             elif(request.form['actionType'] == 'removeService'):
                 db.delete_service(db.find_service_by_id(id))
-                return redirect(url_for('configuration'))
+                return redirect(url_for('configurations'))
             elif(request.form['actionType'] == 'editService'):
-                if(len(request.values) != 3): raise pandoreException.PandoreException("Invalid number of arguments");
-                newService = PandoreService(int(id), str(request.form['editServiceName']), int(request.form['editServicePriority']))
+                if(len(request.values) != 2): raise pandoreException.PandoreException("Invalid number of arguments");
+                newService = PandoreService(int(id), str(request.form['editServiceName']))
                 db.update_service(newService)
-                serviceList = db.find_all_services()
-                serviceList.sort(key=lambda x: x.Priority)
                 serviceInfo = newService
         db.close_db()
 
@@ -206,7 +193,6 @@ def service(id):
             service=serviceInfo,
             servers=serversInfo,
             keywords=keywordList,
-            services=serviceList
             )
     except pandoreException.PandoreException as e:
         if db :
@@ -216,7 +202,6 @@ def service(id):
             service=serviceInfo,
             servers=serversInfo,
             keywords = keywordList,
-            services = serviceList,
             error=e
             )
     except Exception as e:
@@ -247,38 +232,14 @@ def saved_capture(id):
         if not capture:
             return redirect(url_for('saved_captures'))
 
-        minutes = 0
-        hours = 0
-        up_trafic_nb = total_trafic[1]
-        down_trafic_nb = total_trafic[0]
-        up_trafic_unit = "B"
-        down_trafic_unit = "B"
+        string_duration = utils.second_to_duration((capture.EndTime - capture.StartTime).total_seconds())
+        up_trafic = utils.octet_to_string(total_trafic["Up"])
+        down_trafic = utils.octet_to_string(total_trafic["Down"])
 
-        if(up_trafic_nb > 0):
-            up_down_ratio = round(down_trafic_nb/up_trafic_nb, 3)
+        if(total_trafic["Up"] > 0):
+            up_down_ratio = round(total_trafic["Down"]/total_trafic["Up"], 3)
         else:
             up_down_ratio = "-"
-
-        # convert to good unit
-        if(up_trafic_nb < 1024):
-            up_trafic_unit = "B"
-        elif(up_trafic_nb < (1024*1024)):
-            up_trafic_nb = str(int(up_trafic_nb/1024))
-            up_trafic_unit = "kB"
-        else:
-            up_trafic_nb = str(int(up_trafic_nb/(1024*1024)))
-            up_trafic_unit = "MB"
-
-        if(down_trafic_nb < 1024):
-            down_trafic_unit = "B"
-        elif(down_trafic_nb < (1024*1024)):
-            down_trafic_nb = str(int(down_trafic_nb/1024))
-            down_trafic_unit = "kB"
-        else:
-            down_trafic_nb = str(int(down_trafic_nb/(1024*1024)))
-            down_trafic_unit = "MB"
-
-        string_duration = utils.second_to_duration((capture.EndTime - capture.StartTime).total_seconds())
 
         requests_history = {}
         request_history_unit = "sec"
@@ -316,9 +277,12 @@ def saved_capture(id):
                     timeBetweenConnections.append((captureRequests[i+1].DateTime - captureRequests[i].DateTime).total_seconds())
 
             if len(timeBetweenConnections) > 0:
+                mean_deconnection_time = str(round(sum(timeBetweenConnections)/len(timeBetweenConnections), 2)) + "s"
                 nutriscoreFrequency =  1/(sum(timeBetweenConnections)/len(timeBetweenConnections))
             else:
-                nutriscoreFrequency = 1   
+                nutriscoreFrequency = 1
+                mean_deconnection_time = "0s"
+
             nutriscoreDebit = sum(req.PacketSize for req in captureRequests)/(capture.EndTime - capture.StartTime).total_seconds()
             nutriscoreDiversity = len({request.ServerValue for request in captureRequests})
 
@@ -343,23 +307,35 @@ def saved_capture(id):
                 score = "D"
             elif (score >= 0.8):
                 score = "E"
+
+            score_details = {
+                "Score": score,
+                "Bandwidth": utils.octet_to_string(nutriscoreDebit) + "/s",
+                "Diversity": nutriscoreDiversity,
+                "NumberOfDeconnection": len(timeBetweenConnections),
+                "MeanDeconnectionTime": mean_deconnection_time
+                }
         else :
-            score = "-"
+            score_details = {
+                "Score": "-",
+                "Bandwidth": "-",
+                "Diversity": 0,
+                "NumberOfDeconnection": "-",
+                "MeanDeconnectionTime": "-"
+                }
 
         return render_template(
                 "saved_capture.html",
                 capture = capture,
                 requests = captureRequests,
                 duration = string_duration,
-                up_trafic = up_trafic_nb,
-                down_trafic = down_trafic_nb,
-                up_unit = up_trafic_unit,
-                down_unit = down_trafic_unit,
+                up_trafic = up_trafic,
+                down_trafic = down_trafic,
                 ratio = up_down_ratio,
                 stats = statistics,
                 requests_history = dict(sorted(requests_history.items())),
                 request_history_unit = request_history_unit,
-                score = score
+                score_details = score_details
             )
     except Exception as e:
         try:
@@ -403,17 +379,18 @@ def configurations():
                 if(len(request.values) != 2): raise pandoreException.PandoreException("Invalid number of arguments")
                 db.create_service(PandoreService(None, request.form['addServiceName']))
                 services = db.find_all_services()
-            elif(request.form['actionType'] == 'assignServerServiceDNS'):
-                if(len(request.values) != 5): raise pandoreException.PandoreException("Invalid number of arguments")
-                db.update_server(PandoreServer(int(request.form['assignServerID']), request.form['assignServerAddress'], db.find_dns_by_id(int(request.form['assignServerDNS'])), db.find_service_by_id(int(request.form['assignServerService']))))
+            elif(request.form['actionType'] == 'assignServerDNS'):
+                if(len(request.values) != 4): raise pandoreException.PandoreException("Invalid number of arguments")
+                db.update_server(PandoreServer(int(request.form['assignServerID']), request.form['assignServerAddress'], db.find_dns_by_id(int(request.form['assignServerDNS'])), None))
                 servers = db.find_incomplete_servers()
             elif(request.form['actionType'] == 'autoServerClassification'):
                 global PandoreAnalyticsRunner
                 if not PandoreAnalyticsRunner.isAnalyticsRunning():
-                    PandoreAnalyticsRunner.run_analytics(servers, db.find_all_service_keyword(), config.ANALYTICS_TIMEOUT)
+                    PandoreAnalyticsRunner.run_analytics(servers, db.find_all_service_keyword())
+                    servers = db.find_incomplete_servers()
             elif(request.form['actionType'] == 'editApplicationConfiguration'):
-                if(len(request.values) != 11): raise pandoreException.PandoreException("Invalid number of arguments")
-                db.update_configuration(PandoreConfiguration(int(request.form['analytics_timeout']), int(request.form['nutriscore_reference_frequency']), float(request.form['nutriscore_reference_debit']), int(request.form['nutriscore_reference_diversity']), int(request.form['nutriscore_weight_frequency']), int(request.form['nutriscore_weight_debit']), int(request.form['nutriscore_weight_diversity']), float(request.form['nutriscore_sigmoide_slope']), int(request.form['nutriscore_average_type']), request.form['sniffer_api_address']))
+                if(len(request.values) != 10): raise pandoreException.PandoreException("Invalid number of arguments")
+                db.update_configuration(PandoreConfiguration(int(request.form['nutriscore_reference_frequency']), float(request.form['nutriscore_reference_debit']), int(request.form['nutriscore_reference_diversity']), int(request.form['nutriscore_weight_frequency']), int(request.form['nutriscore_weight_debit']), int(request.form['nutriscore_weight_diversity']), float(request.form['nutriscore_sigmoide_slope']), int(request.form['nutriscore_average_type']), request.form['sniffer_api_address']))
                 config = db.get_configuration()
         db.close_db()
 

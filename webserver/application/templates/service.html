@@ -68,16 +68,9 @@
                     <div class="card shadow mb-3">
                         <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
                             <div class="row mb-5">
-                                <div class="col-sm">
-                                    <span class="" style="font-size: 30px;">
-                                        Server list
-                                    </span>
-                                </div>
-                                <div class="col-md-auto">
-                                    <button class="btn btn-imt-green" data-bs-toggle="modal" data-bs-target="#modalAddServer">
-                                        <span class="bi bi-plus"></span> Add new server
-                                    </button>
-                                </div>
+                                <span class="" style="font-size: 30px;">
+                                    Server list
+                                </span>
                             </div>
                             <table id="servers" class="table table-hover" style="width:100%">
                                 <thead>
@@ -112,14 +105,15 @@
                             <div class="row mb-5">
                                 <div class="col-sm">
                                     <span class="" style="font-size: 30px;">
-                                        Keywords
+                                        Regex
                                     </span>
                                 </div>
                                 <div class="col-md-auto">
                                     <button class="btn btn-imt-green" data-bs-toggle="modal" data-bs-target="#modalAddKeyword">
-                                        <span class="bi bi-plus"></span> Add new keyword
+                                        <span class="bi bi-plus"></span> Add new regex
                                     </button>
                                 </div>
+                                <p>Following regex are used to parse domain names and associate them to this service</p>
                             </div>
                             <table id="keywords" class="table table-hover" style="width:100%">
                                 <thead>
@@ -190,40 +184,16 @@
         </div>
     </div>
 
-    <div class="modal fade" id="modalAddServer" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <form method="post">
-                    <div class="modal-header">
-                        <h5 class="modal-title">New server for {{service.Name}}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" name="actionType" id="actionType" value="addServer">
-                        <label for="addServerValue"><strong>Server value : </strong></label>
-                        <input type="text" class="form-control mb-3" id="addServerValue" name="addServerValue">
-                        <label for="addServerValue"><strong>Server DNS : </strong></label>
-                        <input type="text" class="form-control" id="addServerDNS" name="addServerDNS" placeholder="Optional">
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                        <button type="submit" class="btn btn-imt-green">Validate</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <div class="modal fade" id="modalRemoveKeyword" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <form method="post">
                     <div class="modal-header">
-                        <h5 class="modal-title">Remove keyword</h5>
+                        <h5 class="modal-title">Remove regex</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="text-danger"><p><strong>Do you really want to remove the following keyword from {{service.Name}}?</strong></p></div>
+                        <div class="text-danger"><p><strong>Do you really want to remove the following regex from {{service.Name}}?</strong></p></div>
                         <div id="removeKeywordValue"></div>
                         <input type="hidden" name="removeKeywordID" id="removeKeywordID" value="">
                         <input type="hidden" name="actionType" id="actionType" value="removeKeyword">
@@ -242,12 +212,12 @@
             <div class="modal-content">
                 <form method="post">
                     <div class="modal-header">
-                        <h5 class="modal-title">New keyword for {{service.Name}}</h5>
+                        <h5 class="modal-title">New regex for {{service.Name}}</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <input type="hidden" name="actionType" id="actionType" value="addKeyword">
-                        <label for="addKeywordValue"><strong>Keyword : </strong></label>
+                        <label for="addKeywordValue"><strong>Regex : </strong></label>
                         <input type="text" class="form-control mb-3" id="addKeywordValue" name="addKeywordValue">
                     </div>
                     <div class="modal-footer">
@@ -292,12 +262,6 @@
                         <input type="hidden" name="actionType" id="actionType" value="editService">
                         <label for="editServiceName"><strong>Name : </strong></label>
                         <input type="text" class="form-control mb-3" id="editServiceName" name="editServiceName" value="{{service.Name}}">
-                        <label for="editServicePriority"><strong>Priority : </strong></label>
-                        <select class="selectpicker form-control" id="editServicePriority" name="editServicePriority" data-live-search="true">
-                            {% for serviceInfo in services %}
-                            <option value="{{serviceInfo.Priority }}" {{"selected" if serviceInfo.ID == service.ID}}>{{ serviceInfo.Priority }} - {{serviceInfo.Name}}</option>
-                            {% endfor %}
-                        </select>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
