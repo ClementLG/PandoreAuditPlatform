@@ -74,6 +74,7 @@ class PandoreAnalytics:
                     else:
                         bestMatch = None
                         for i in range(len(dictionnary_keywords)):
+                            print("new regex")
                             res = re.search(dictionnary_keywords[i].Value, domain_name)
                             if res:
                                 print("match")
