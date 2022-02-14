@@ -33,17 +33,17 @@ CREATE TABLE Service_Keyword(
 CREATE TABLE DNS(
 	DNS_ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
 	DNS_Value VARCHAR(1000) NOT NULL,
-	CONSTRAINT Unique_DNS_Value UNIQUE (DNS_Value)
+	DNS_Service INT NULL,
+	CONSTRAINT Unique_DNS_Value UNIQUE (DNS_Value),
+	CONSTRAINT DNS_Service FOREIGN KEY (DNS_Service) REFERENCES Service(Service_ID)
 )ENGINE=INNODB//
 
 CREATE TABLE Server(
 	Server_ID INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
 	Server_Address VARCHAR(1000) NOT NULL,
 	Server_DNS INT NULL,
-	Server_Service INT NULL,
 	CONSTRAINT Unique_Server_Address_DNS UNIQUE (Server_Address),
-	CONSTRAINT Server_DNS FOREIGN KEY (Server_DNS) REFERENCES DNS(DNS_ID),
-	CONSTRAINT Server_Service FOREIGN KEY (Server_Service) REFERENCES Service(Service_ID)
+	CONSTRAINT Server_DNS FOREIGN KEY (Server_DNS) REFERENCES DNS(DNS_ID)
 )ENGINE=INNODB//
 
 CREATE TABLE Capture(
@@ -77,7 +77,7 @@ END//
 
 CREATE PROCEDURE UpdateConfiguration(IN NUTRISCORE_REFERENCE_FREQUENCY INT, IN NUTRISCORE_REFERENCE_DEBIT FLOAT, IN NUTRISCORE_REFERENCE_DIVERSITY INT, IN NUTRISCORE_WEIGHT_FREQUENCY INT, IN NUTRISCORE_WEIGHT_DEBIT INT, IN NUTRISCORE_WEIGHT_DIVERSITY INT, IN NUTRISCORE_SIGMOIDE_SLOPE FLOAT, IN NUTRISCORE_AVERAGE_TYPE INT, IN SNIFFER_API_ADDRESS VARCHAR(1000))
 BEGIN
-	UPDATE Configuration NUTRISCORE_REFERENCE_FREQUENCY = NUTRISCORE_REFERENCE_FREQUENCY, NUTRISCORE_REFERENCE_DEBIT = NUTRISCORE_REFERENCE_DEBIT, NUTRISCORE_REFERENCE_DIVERSITY = NUTRISCORE_REFERENCE_DIVERSITY, NUTRISCORE_WEIGHT_FREQUENCY = NUTRISCORE_WEIGHT_FREQUENCY, NUTRISCORE_WEIGHT_DEBIT = NUTRISCORE_WEIGHT_DEBIT, NUTRISCORE_WEIGHT_DIVERSITY = NUTRISCORE_WEIGHT_DIVERSITY, NUTRISCORE_SIGMOIDE_SLOPE = NUTRISCORE_SIGMOIDE_SLOPE, NUTRISCORE_AVERAGE_TYPE = NUTRISCORE_AVERAGE_TYPE, SNIFFER_API_ADDRESS = SNIFFER_API_ADDRESS;
+	UPDATE Configuration SET NUTRISCORE_REFERENCE_FREQUENCY = NUTRISCORE_REFERENCE_FREQUENCY, NUTRISCORE_REFERENCE_DEBIT = NUTRISCORE_REFERENCE_DEBIT, NUTRISCORE_REFERENCE_DIVERSITY = NUTRISCORE_REFERENCE_DIVERSITY, NUTRISCORE_WEIGHT_FREQUENCY = NUTRISCORE_WEIGHT_FREQUENCY, NUTRISCORE_WEIGHT_DEBIT = NUTRISCORE_WEIGHT_DEBIT, NUTRISCORE_WEIGHT_DIVERSITY = NUTRISCORE_WEIGHT_DIVERSITY, NUTRISCORE_SIGMOIDE_SLOPE = NUTRISCORE_SIGMOIDE_SLOPE, NUTRISCORE_AVERAGE_TYPE = NUTRISCORE_AVERAGE_TYPE, SNIFFER_API_ADDRESS = SNIFFER_API_ADDRESS;
 END//
 
 /*Stored procedures for table Service*/
@@ -109,7 +109,7 @@ END//
 CREATE PROCEDURE DeleteServiceByID (IN ID INT)
 BEGIN
 	DELETE FROM Service_Keyword WHERE ServiceKeyword_Service = ID;
-	UPDATE Server SET Server_Service = NULL WHERE Server_Service = ID;
+	UPDATE DNS SET DNS_Service = NULL WHERE DNS_Service = ID;
 	DELETE FROM Service WHERE Service_ID = ID;
 END//
 
@@ -117,7 +117,7 @@ CREATE PROCEDURE DeleteServiceByName (IN Name VARCHAR(255))
 BEGIN
 	SET @ServiceID = (SELECT Service_ID FROM Server WHERE LOWER(Service_Name) = LOWER(Name));
 	DELETE FROM Service_Keyword WHERE ServiceKeyword_Service = @ServiceID;
-	UPDATE Server SET Server_Service = NULL WHERE Server_Service = @ServiceID;
+	UPDATE Server SET DNS_Service = NULL WHERE DNS_Service = @ServiceID;
 	DELETE FROM Service WHERE Service_ID = @ServiceID;
 END//
 
@@ -143,29 +143,29 @@ BEGIN
 END//
 
 /*Stored procedures for table Server*/
-CREATE PROCEDURE CreateServer(IN Address VARCHAR(1000), IN Service INT, IN DNS INT)
+CREATE PROCEDURE CreateServer(IN Address VARCHAR(1000), IN DNS INT)
 BEGIN
-	INSERT INTO Server (Server_Address, Server_Service, Server_DNS) VALUES (Address, Service, DNS);
+	INSERT INTO Server (Server_Address, Server_DNS) VALUES (Address, DNS);
 END//
 
-CREATE PROCEDURE CreateServerString(IN Address VARCHAR(1000), IN Service INT, IN DNS VARCHAR(1000))
+CREATE PROCEDURE CreateServerString(IN Address VARCHAR(1000), IN DNS VARCHAR(1000))
 BEGIN
 	IF (DNS IS NOT NULL AND DNS <> '') THEN
 		SET @DNS = (SELECT COUNT(*) FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS));
 		IF(@DNS = 0)THEN
-			CALL CreateDNS(DNS);
+			CALL CreateDNS(DNS, NULL);
 		END IF;
 		SET @NBSERV = (SELECT COUNT(*) FROM Server WHERE LOWER(Server_Address) = LOWER(Address));
 		IF(@NBSERV = 0)THEN
-			INSERT INTO Server (Server_Address, Server_Service, Server_DNS) VALUES (Address, Service, (SELECT DNS_ID FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS)));
+			INSERT INTO Server (Server_Address, Server_DNS) VALUES (Address, (SELECT DNS_ID FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS)));
 		ELSE
 			SET @SERV_ID = (SELECT Server_ID FROM Server WHERE LOWER(Server_Address) = LOWER(Address));
-			CALL UpdateServer(@SERV_ID, Address, Service, (SELECT DNS_ID FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS)));
+			CALL UpdateServer(@SERV_ID, Address, (SELECT DNS_ID FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS)));
 		END IF;
 	ELSE
 		SET @NBSERV = (SELECT COUNT(*) FROM Server WHERE LOWER(Server_Address) = LOWER(Address));
 		IF(@NBSERV = 0)THEN
-			INSERT INTO Server (Server_Address, Server_Service, Server_DNS) VALUES (Address, Service, NULL);
+			INSERT INTO Server (Server_Address, Server_DNS) VALUES (Address, NULL);
 		END IF;
 	END IF;
 END//
@@ -173,15 +173,6 @@ END//
 CREATE PROCEDURE ReadAllServers()
 BEGIN
 	SELECT * FROM Server ORDER BY Server_Address ASC;
-END//
-
-CREATE PROCEDURE ReadServersByServiceID(IN Service INT, IN Details TINYINT)
-BEGIN
-	IF (Details = 1) THEN
-		SELECT * FROM Server LEFT JOIN DNS ON Server_DNS = DNS_ID WHERE Server_Service = Service ORDER BY Server_Address ASC;
-	ELSE
-		SELECT * FROM Server WHERE Server_Service = Service ORDER BY Server_Address ASC;
-	END IF;
 END//
 
 CREATE PROCEDURE ReadServerByDNSID(IN DNS INT)
@@ -199,19 +190,9 @@ BEGIN
 	SELECT * FROM Server WHERE LOWER(Server_Address) = LOWER(Address);
 END//
 
-CREATE PROCEDURE ReadIncompleteServers()
+CREATE PROCEDURE UpdateServer(IN ID INT, IN Address VARCHAR(1000), IN DNS INT)
 BEGIN
-	SELECT Server_ID, Server_Address, Server_Service, Server_DNS, Service_Name, DNS_Value FROM (Server LEFT JOIN Service ON Server_Service = Service_ID) LEFT JOIN DNS ON Server_DNS = DNS_ID WHERE Server_Service IS NULL;
-END//
-
-CREATE PROCEDURE UpdateServer(IN ID INT, IN Address VARCHAR(1000), IN Service INT, IN DNS INT)
-BEGIN
-	UPDATE Server SET Server_Address = Address, Server_Service = Service, Server_DNS = DNS WHERE Server_ID = ID;
-END//
-
-CREATE PROCEDURE UpdateServerService(IN ID INT, IN Service INT)
-BEGIN
-	UPDATE Server SET Server_Service = Service, Server_DNS = DNS WHERE Server_ID = ID;
+	UPDATE Server SET Server_Address = Address, Server_DNS = DNS WHERE Server_ID = ID;
 END//
 
 CREATE PROCEDURE DeleteServerByID(IN ID INT)
@@ -224,15 +205,10 @@ BEGIN
 	DELETE FROM Server WHERE LOWER(Server_Address) = LOWER(Address);
 END//
 
-CREATE PROCEDURE DeleteServerByServiceID(IN Service INT)
-BEGIN
-	DELETE FROM Server WHERE Server_Service = Service;
-END//
-
 /*Stored procedures for table DNS*/
-CREATE PROCEDURE CreateDNS(IN Value VARCHAR(1000))
+CREATE PROCEDURE CreateDNS(IN Value VARCHAR(1000), IN Service INT)
 BEGIN
-	INSERT INTO DNS (DNS_Value) VALUES (Value);
+	INSERT INTO DNS (DNS_Value, DNS_Service) VALUES (Value, Service);
 END//
 
 CREATE PROCEDURE ReadAllDNS()
@@ -250,9 +226,19 @@ BEGIN
 	SELECT * FROM DNS WHERE LOWER(DNS_Value) = LOWER(Value);
 END//
 
-CREATE PROCEDURE UpdateDNS(IN ID INT, IN Value VARCHAR(1000))
+CREATE PROCEDURE ReadDNSByServiceID(IN Service INT)
 BEGIN
-	UPDATE DNS SET DNS_Value = Address WHERE DNS_ID = ID;
+	SELECT * FROM DNS WHERE DNS_Service = Service ORDER BY DNS_Value ASC;
+END//
+
+CREATE PROCEDURE ReadIncompleteDNS()
+BEGIN
+	SELECT * FROM DNS WHERE DNS_Service IS NULL;
+END//
+
+CREATE PROCEDURE UpdateDNS(IN ID INT, IN Value VARCHAR(1000), IN Service INT)
+BEGIN
+	UPDATE DNS SET DNS_Value = Value, DNS_Service = Service WHERE DNS_ID = ID;
 END//
 
 CREATE PROCEDURE DeleteDNSByID(IN ID INT)
@@ -290,7 +276,7 @@ END//
 CREATE PROCEDURE ReadCaptureServicesStats(IN ID INT)
 BEGIN
 	/*IN MB*/
-	SELECT * FROM (SELECT Service_Name, ROUND(SUM(CASE WHEN CaptureRequest_Direction = 1 THEN CaptureRequest_PacketSize ELSE 0 END)/(1024*1024), 2) AS UpTrafic, ROUND(SUM(CASE WHEN CaptureRequest_Direction = 0 THEN CaptureRequest_PacketSize ELSE 0 END)/(1024*1024), 2) AS DownTrafic FROM ((Capture_Request LEFT JOIN Server ON CaptureRequest_Server = Server_ID) LEFT JOIN DNS ON Server_DNS = DNS_ID) LEFT JOIN Service ON Server_Service = Service_ID WHERE CaptureRequest_Capture = ID GROUP BY Server_Service) AS sub ORDER BY (UpTrafic+DownTrafic) DESC LIMIT 10;
+	SELECT * FROM (SELECT Service_Name, ROUND(SUM(CASE WHEN CaptureRequest_Direction = 1 THEN CaptureRequest_PacketSize ELSE 0 END)/(1024*1024), 2) AS UpTrafic, ROUND(SUM(CASE WHEN CaptureRequest_Direction = 0 THEN CaptureRequest_PacketSize ELSE 0 END)/(1024*1024), 2) AS DownTrafic FROM ((Capture_Request LEFT JOIN Server ON CaptureRequest_Server = Server_ID) LEFT JOIN DNS ON Server_DNS = DNS_ID) LEFT JOIN Service ON DNS_Service = Service_ID WHERE CaptureRequest_Capture = ID GROUP BY DNS_Service) AS sub ORDER BY (UpTrafic+DownTrafic) DESC LIMIT 10;
 END//
 
 CREATE PROCEDURE ReadRunningCapture()
@@ -326,26 +312,16 @@ END//
 
 CREATE PROCEDURE CreateRequestString(IN PacketSize FLOAT, IN Direction TINYINT(1), IN Protocol VARCHAR(255), IN Server VARCHAR(1000), IN DNS VARCHAR(1000), IN Capture INT)
 BEGIN
-	IF (Server IS NOT NULL AND Server <> '' AND DNS IS NOT NULL AND DNS <> '') THEN
-		SET @SERVER_ID = (SELECT COUNT(*) FROM Server WHERE LOWER(Server_Address) = LOWER(Server) AND Server_DNS = (SELECT DNS_ID FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS)));
-		SET @DNS_ID = (SELECT COUNT(*) FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS));
-		IF(@DNS_ID = 0) THEN
-			CALL CreateDNS(DNS);
-		END IF;
-		IF(@SERVER_ID = 0) THEN
-			CALL CreateServer(Server, NULL, (SELECT DNS_ID FROM DNS WHERE LOWER(DNS_Value) = LOWER(DNS)));
-		END IF;
+	IF (DNS IS NOT NULL AND DNS <> '') THEN
+		CALL CreateServerString(Server, DNS);
 		CALL CreateRequest(PacketSize, Direction, Protocol, (SELECT Server_ID FROM Server WHERE LOWER(Server_Address) = LOWER(Server)), Capture);
 	ELSE
-		IF (Server IS NULL OR Server = '') THEN
-			CALL CreateRequest(PacketSize, Direction, Protocol, NULL, Capture);
+		IF (INET_ATON(Server) BETWEEN INET_ATON("10.0.0.0") AND INET_ATON("10.255.255.255")) OR (INET_ATON(Server) BETWEEN INET_ATON("172.16.0.0") AND INET_ATON("172.31.255.255")) OR (INET_ATON(Server) BETWEEN INET_ATON("192.168.0.0") AND INET_ATON("192.168.255.255")) THEN
+			CALL CreateServerString(Server, "localhost");
 		ELSE
-			SET @SERVER_ID = (SELECT COUNT(*) FROM Server WHERE LOWER(Server_Address) = LOWER(Server));
-			IF(@SERVER_ID = 0) THEN
-				CALL CreateServer(Server, NULL, NULL);
-			END IF;
-			CALL CreateRequest(PacketSize, Direction, Protocol, (SELECT Server_ID FROM Server WHERE LOWER(Server_Address) = LOWER(Server)), Capture);
+			CALL CreateServerString(Server, NULL);
 		END IF;
+		CALL CreateRequest(PacketSize, Direction, Protocol, (SELECT Server_ID FROM Server WHERE LOWER(Server_Address) = LOWER(Server)), Capture);
 	END IF;
 END//
 
@@ -395,6 +371,7 @@ INSERT INTO Configuration (NUTRISCORE_REFERENCE_FREQUENCY, NUTRISCORE_REFERENCE_
 
 /* Populate database with existing services */
 CALL CreateService("Intranet service")//
+CALL CreateDNS("localhost", 1)//
 
 CALL CreateService("OnlyFans")//
 CALL CreateServiceKeyword("(\.|^)onlyfans\.com$", 2)//
@@ -6265,53 +6242,3 @@ CALL CreateService("Zayo")//
 CALL CreateServiceKeyword("(\.|^)zayo\.com$", 934)//
 CALL CreateService("Zenlayer")//
 CALL CreateServiceKeyword("(\.|^)zenlayer\.com$", 935)//
-
-/* Link keywords to services */
-/*CALL CreateServiceKeyword("youtube", 1)//
-CALL CreateServiceKeyword("ytb", 1)//
-CALL CreateServiceKeyword("ytimg", 1)//
-CALL CreateServiceKeyword("yt", 1)//
-CALL CreateServiceKeyword("googlevideo.com", 1)//
-CALL CreateServiceKeyword("android", 2)//
-CALL CreateServiceKeyword("google", 3)//
-CALL CreateServiceKeyword("gstatic", 3)//
-CALL CreateServiceKeyword("ggpht", 3)//
-CALL CreateServiceKeyword("gmodules", 3)//
-CALL CreateServiceKeyword("doubleclick", 3)//
-CALL CreateServiceKeyword("gvt1", 3)//
-CALL CreateServiceKeyword("1e100", 3)//
-CALL CreateServiceKeyword("ocsp.pki.goog", 3)//
-CALL CreateServiceKeyword("whatsapp", 4)//
-CALL CreateServiceKeyword("instagram", 5)//
-CALL CreateServiceKeyword("facebook", 6)//
-CALL CreateServiceKeyword("fbcdb", 6)//
-CALL CreateServiceKeyword("tfbnw", 6)//
-CALL CreateServiceKeyword("awsdns", 7)//
-CALL CreateServiceKeyword("amazonaws", 7)//
-CALL CreateServiceKeyword("cloudfront", 7)//
-CALL CreateServiceKeyword("s0.ipstatp", 7)//
-CALL CreateServiceKeyword("twitch", 8)//
-CALL CreateServiceKeyword("amazon", 9)//
-CALL CreateServiceKeyword("alexa", 9)//
-CALL CreateServiceKeyword("amzn", 9)//
-CALL CreateServiceKeyword("windows", 10)//
-CALL CreateServiceKeyword("microsoft", 11)//
-CALL CreateServiceKeyword("live", 11)//
-CALL CreateServiceKeyword("msn", 11)//
-CALL CreateServiceKeyword("msedge", 11)//
-CALL CreateServiceKeyword("live365", 11)//
-CALL CreateServiceKeyword("office365now", 11)//
-CALL CreateServiceKeyword("o365filtering", 11)//
-CALL CreateServiceKeyword("discord", 12)//
-CALL CreateServiceKeyword("discordapp", 12)//
-CALL CreateServiceKeyword("twitter", 13)//
-CALL CreateServiceKeyword("ubuntu", 14)//
-CALL CreateServiceKeyword("xenial", 14)//
-CALL CreateServiceKeyword("tiktok", 15)//
-CALL CreateServiceKeyword("telecom-bretagne", 16)//
-CALL CreateServiceKeyword("imt-atlantique", 16)//
-CALL CreateServiceKeyword("firefox", 17)//
-CALL CreateServiceKeyword("mozilla", 17)//
-CALL CreateServiceKeyword("netflix", 18)//
-CALL CreateServiceKeyword("wordpress", 19)//
-CALL CreateServiceKeyword("quantserve", 20)//*/

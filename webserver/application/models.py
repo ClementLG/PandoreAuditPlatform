@@ -68,23 +68,23 @@ class PandoreDNS():
 
     ID: int
     Value: str
+    Service: PandoreService
 
-    def __init__(self, ID: int, Value: str) -> None:
+    def __init__(self, ID: int, Value: str, Service: PandoreService) -> None:
         self.ID = ID
         self.Value = Value
+        self.Service = Service
 
 class PandoreServer():
 
     ID: int
     Address: str
     DNS: PandoreDNS
-    Service: PandoreService
 
-    def __init__(self, ID: int, Address: str, DNS: PandoreDNS, Service: PandoreService) -> None:
+    def __init__(self, ID: int, Address: str, DNS: PandoreDNS) -> None:
         self.ID = ID
         self.Address = Address
         self.DNS = DNS
-        self.Service = Service
 
 class PandoreCaptureRequest():
 

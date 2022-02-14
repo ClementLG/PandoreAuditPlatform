@@ -181,7 +181,11 @@ class PandoreDB:
         self.cursor.callproc('ReadAllDNS')
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                DNSs.append(PandoreDNS(int(res["DNS_ID"]), str(res["DNS_Value"])))
+                DNSs.append(PandoreDNS(
+                    int(res["DNS_ID"]), 
+                    str(res["DNS_Value"]), 
+                    None if res["DNS_Service"] is None else self.find_service_by_id(int(res["DNS_Service"]))
+                    ))
         return DNSs
 
     def find_dns_by_id(self, id: int) -> Optional[PandoreDNS]:
@@ -190,8 +194,24 @@ class PandoreDB:
         self.cursor.callproc('ReadDNSByID', [int(id)])
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                return PandoreDNS(int(res["DNS_ID"]), str(res["DNS_Value"]))
+                return PandoreDNS(
+                    int(res["DNS_ID"]), 
+                    str(res["DNS_Value"]), 
+                    None if res["DNS_Service"] is None else self.find_service_by_id(int(res["DNS_Service"]))
+                    )
         return None
+
+    def find_incomplete_dns(self) -> list[PandoreDNS]:
+        DNSs = []
+        self.cursor.callproc('ReadIncompleteDNS', [])
+        for result in self.cursor.stored_results():
+            for res in result.fetchall():
+                DNSs.append(PandoreDNS(
+                    int(res["DNS_ID"]), 
+                    str(res["DNS_Value"]), 
+                    None if res["DNS_Service"] is None else self.find_service_by_id(int(res["DNS_Service"]))
+                    ))
+        return DNSs
 
     def find_dns_by_value(self, value: str) -> Optional[PandoreDNS]:
         if not value:
@@ -199,7 +219,11 @@ class PandoreDB:
         self.cursor.callproc('ReadDNSByValue', [value])
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                return PandoreDNS(int(res["DNS_ID"]), str(res["DNS_Value"]))
+                return PandoreDNS(
+                    int(res["DNS_ID"]), 
+                    str(res["DNS_Value"]), 
+                    None if res["DNS_Service"] is None else self.find_service_by_id(int(res["DNS_Service"]))
+                    )
         return None
 
     def create_dns(self, dns: PandoreDNS) -> None:
@@ -209,24 +233,30 @@ class PandoreDB:
             raise pandoreException.PandoreException("DNS value minimum size is 1")
         elif len(dns.Value) > 1000:
             raise pandoreException.PandoreException("DNS value maximum size is 1000")
+        elif dns.Service is None or self.find_service_by_id(dns.Service.ID) is None:
+            raise pandoreException.PandoreException("Invalid DNS service")
         elif not self.find_dns_by_value(dns.Value):
-            self.cursor.callproc('CreateDNS', [dns.Value])
+            self.cursor.callproc('CreateDNS', [dns.Value, dns.Service.ID if dns.Service is not None else None])
             self.conn.commit()
 
+    def update_dns(self, dns: PandoreDNS) -> None:
+        if not dns:
+            raise pandoreException.PandoreException("DNS is missing")
+        elif not dns.Value or len(dns.Value) < 1:
+            raise pandoreException.PandoreException("DNS value minimum size is 1")
+        elif len(dns.Value) > 1000:
+            raise pandoreException.PandoreException("DNS value maximum size is 1000")
+        elif dns.Service is not None and self.find_service_by_id(dns.Service.ID) is None:
+            raise pandoreException.PandoreException("Invalid DNS service")
+        else:
+            otherDNS = self.find_dns_by_value(dns.Value)
+            if otherDNS and otherDNS.ID != dns.ID:
+                raise pandoreException.PandoreException("This domain name is already used")
+            else:
+                self.cursor.callproc('UpdateDNS', [dns.ID, dns.Value, dns.Service.ID if dns.Service is not None else None])
+                self.conn.commit()
+
     # Server
-    def find_incomplete_servers(self) -> list[PandoreServer]:
-        servers = []
-        self.cursor.callproc('ReadIncompleteServers')
-        for result in self.cursor.stored_results():
-            for res in result.fetchall():
-                servers.append(PandoreServer(
-                    int(res["Server_ID"]), 
-                    str(res["Server_Address"]), 
-                    self.find_dns_by_id(res["Server_DNS"]), 
-                    self.find_service_by_id(res["Server_Service"])
-                    ))
-        return servers
-   
     def find_server_by_id(self, id: int) -> Optional[PandoreServer]:
         if not id:
             return None
@@ -236,8 +266,7 @@ class PandoreDB:
                 return PandoreServer(
                     int(res["Server_ID"]), 
                     str(res["Server_Address"]), 
-                    self.find_dns_by_id(res["Server_DNS"]), 
-                    self.find_service_by_id(res["Server_Service"])
+                    self.find_dns_by_id(res["Server_DNS"])
                     )
         return None
 
@@ -250,8 +279,7 @@ class PandoreDB:
                 return PandoreServer(
                     int(res["Server_ID"]), 
                     str(res["Server_Address"]), 
-                    self.find_dns_by_id(res["Server_DNS"]), 
-                    self.find_service_by_id(res["Server_Service"])
+                    self.find_dns_by_id(res["Server_DNS"])
                     )
         return None
 
@@ -276,15 +304,6 @@ class PandoreDB:
             self.cursor.callproc('CreateServerString', [ip, service.ID, domain_name])
             self.conn.commit()
 
-    def remove_service_from_server(self, id: int) -> None:
-        if not id:
-            raise pandoreException.PandoreException("Server not found");
-        server = self.find_server_by_id(id)
-        if not server:
-            raise pandoreException.PandoreException("Invalid server");
-        server.Service = None
-        self.update_server(server)
-
     def update_server(self, server: PandoreServer) -> None:
         if not server.ID:
             raise pandoreException.PandoreException("Server not found");
@@ -296,8 +315,6 @@ class PandoreDB:
             raise pandoreException.PandoreException("Server address minimum size is 1")
         elif len(server.Address) > 1000:
             raise pandoreException.PandoreException("Server address maximum size is 1000")
-        elif server.Service and not self.find_service_by_id(server.Service.ID):
-            raise pandoreException.PandoreException("Invalid server service")
         elif server.DNS and not self.find_dns_by_id(server.DNS.ID):
             raise pandoreException.PandoreException("Invalid server dns")
         else:
@@ -307,8 +324,7 @@ class PandoreDB:
             else:
                 self.cursor.callproc('UpdateServer', [
                     server.ID, 
-                    server.Address, 
-                    None if server.Service is None else server.Service.ID, 
+                    server.Address,  
                     None if server.DNS is None else server.DNS.ID
                     ])
                 self.conn.commit()
@@ -349,16 +365,15 @@ class PandoreDB:
                     )
         return None
 
-    def find_service_all_servers(self, id: int, details: bool) -> list[PandoreServer]:
+    def find_service_all_dns(self, id: int) -> list[PandoreServer]:
         servers = []
         service = self.find_service_by_id(id)
-        self.cursor.callproc('ReadServersByServiceID', [id, details])
+        self.cursor.callproc('ReadDNSByServiceID', [id])
         for result in self.cursor.stored_results():
             for res in result.fetchall():
-                servers.append(PandoreServer(
-                    int(res["Server_ID"]), 
-                    str(res["Server_Address"]), 
-                    self.find_dns_by_id(res["Server_DNS"]), 
+                servers.append(PandoreDNS(
+                    int(res["DNS_ID"]), 
+                    str(res["DNS_Value"]),
                     service
                     ))
         return servers

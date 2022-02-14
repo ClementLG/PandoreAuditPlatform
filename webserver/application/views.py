@@ -3,7 +3,7 @@ from datetime import datetime
 from application import app, pandoreDB, pandoreException, utils
 from application.pandore_analytics import PandoreAnalytics
 from application.models import *
-import requests, math
+import requests, math, time
 
 PandoreAnalyticsRunner = PandoreAnalytics()
 
@@ -120,8 +120,8 @@ def get_running_captures():
                 data["description"] = capture.Description + " | " + capture.ConnectionType + " | " + capture.Interface
                 data["start_time"] = capture.StartTime.strftime("%d/%m/%Y %H:%M:%S")
                 data["duration"] = utils.second_to_duration((datetime.utcnow() - capture.StartTime).total_seconds())
-                data["ttdown"] = utils.octet_to_string(total_trafic[0])
-                data["ttup"] = utils.octet_to_string(total_trafic[1])
+                data["ttdown"] = utils.octet_to_string(total_trafic['Down'])
+                data["ttup"] = utils.octet_to_string(total_trafic['Up'])
                 captures.append(data)
         db.close_db()
         response = app.response_class(response=json.dumps(captures),status=200,mimetype='application/json')
@@ -160,16 +160,21 @@ def service(id):
     try:
         db = pandoreDB.PandoreDB()
         serviceInfo = db.find_service_by_id(id)
-        serversInfo = db.find_service_all_servers(id, True)
+        dnsInfo = db.find_service_all_dns(id)
         keywordList = db.find_all_keyword_by_service(id)
 
         if(request.method == 'POST'):
             if(id == db.find_service_by_name("Intranet service").ID):
                 raise pandoreException.PandoreException("You can't edit or delete this service")
-            elif(request.form['actionType'] == 'removeServer'):
+            elif(request.form['actionType'] == 'removeDNS'):
                 if(len(request.values) != 2): raise pandoreException.PandoreException("Invalid number of arguments");
-                db.remove_service_from_server(int(request.form['removeServerID']))
-                serversInfo = db.find_service_all_servers(id, True)
+                dns = db.find_dns_by_id(int(request.form['removeDNSID']))
+                if dns is None:
+                    raise pandoreException.PandoreException("Impossible to find the given DNS")
+                else:
+                    dns.Service = None
+                    db.update_dns(dns)
+                    dnsInfo = db.find_service_all_dns(id)
             elif(request.form['actionType'] == 'addKeyword'):
                 if(len(request.values) != 2): raise pandoreException.PandoreException("Invalid number of arguments");
                 db.create_service_keyword(PandoreServiceKeyword(0, str(request.form['addKeywordValue']), db.find_service_by_id(id)))
@@ -191,7 +196,7 @@ def service(id):
         return render_template(
             "service.html",
             service=serviceInfo,
-            servers=serversInfo,
+            dnsInfo=dnsInfo,
             keywords=keywordList,
             )
     except pandoreException.PandoreException as e:
@@ -352,7 +357,7 @@ def saved_capture(id):
 def get_analytics_running_status():
     global PandoreAnalyticsRunner
     if PandoreAnalyticsRunner.isAnalyticsRunning():
-        response = app.response_class(response=json.dumps([str(PandoreAnalyticsRunner.getNumberOfProcessedServers()), str(PandoreAnalyticsRunner.getNumberOfUnknownServers())]),status=200,mimetype='application/json')
+        response = app.response_class(response=json.dumps([str(PandoreAnalyticsRunner.getNumberOfProcessedDNS()), str(PandoreAnalyticsRunner.getNumberOfUnknownDNS())]),status=200,mimetype='application/json')
     else:
         response = app.response_class(response=json.dumps([str(0)]),status=200,mimetype='application/json')
     return response
@@ -370,24 +375,32 @@ def stop_analytics():
 def configurations():
     try:
         db = pandoreDB.PandoreDB()
-        servers = db.find_incomplete_servers()
+        incomplete_dns = db.find_incomplete_dns()
         services = db.find_all_services()
-        dns = db.find_all_dns()
         config = db.get_configuration()
         if(request.method == 'POST'):
             if(request.form['actionType'] == 'addService'):
                 if(len(request.values) != 2): raise pandoreException.PandoreException("Invalid number of arguments")
                 db.create_service(PandoreService(None, request.form['addServiceName']))
                 services = db.find_all_services()
-            elif(request.form['actionType'] == 'assignServerDNS'):
-                if(len(request.values) != 4): raise pandoreException.PandoreException("Invalid number of arguments")
-                db.update_server(PandoreServer(int(request.form['assignServerID']), request.form['assignServerAddress'], db.find_dns_by_id(int(request.form['assignServerDNS'])), None))
-                servers = db.find_incomplete_servers()
-            elif(request.form['actionType'] == 'autoServerClassification'):
+            elif(request.form['actionType'] == 'assignDNSService'):
+                if(len(request.values) != 3): raise pandoreException.PandoreException("Invalid number of arguments")
+                dns = db.find_dns_by_id(int(request.form['assignDNSService_ID']))
+                service = db.find_service_by_id(int(request.form['assignDNSService_Service']))
+                if not dns:
+                    raise pandoreException.PandoreException("Invalid domain name ID")
+                elif not service:
+                    raise pandoreException.PandoreException("Invalid domain name service")
+                else:
+                    dns.Service = service
+                    db.update_dns(dns)
+                    incomplete_dns = db.find_incomplete_dns()
+            elif(request.form['actionType'] == 'autoDomainClassification'):
                 global PandoreAnalyticsRunner
                 if not PandoreAnalyticsRunner.isAnalyticsRunning():
-                    PandoreAnalyticsRunner.run_analytics(servers, db.find_all_service_keyword())
-                    servers = db.find_incomplete_servers()
+                    PandoreAnalyticsRunner.run_analytics(incomplete_dns, db.find_all_service_keyword())
+                    time.sleep(1)
+                    incomplete_dns = db.find_incomplete_dns()
             elif(request.form['actionType'] == 'editApplicationConfiguration'):
                 if(len(request.values) != 10): raise pandoreException.PandoreException("Invalid number of arguments")
                 db.update_configuration(PandoreConfiguration(int(request.form['nutriscore_reference_frequency']), float(request.form['nutriscore_reference_debit']), int(request.form['nutriscore_reference_diversity']), int(request.form['nutriscore_weight_frequency']), int(request.form['nutriscore_weight_debit']), int(request.form['nutriscore_weight_diversity']), float(request.form['nutriscore_sigmoide_slope']), int(request.form['nutriscore_average_type']), request.form['sniffer_api_address']))
@@ -396,9 +409,8 @@ def configurations():
 
         return render_template(
             "configuration.html",
-            unknownServers = servers,
+            incomplete_dns = incomplete_dns,
             allServices = services,
-            allDNS = dns,
             config = config
         )
     except pandoreException.PandoreException as e:
@@ -407,9 +419,9 @@ def configurations():
             db.close_db()
         return render_template(
             "configuration.html",
-            unknownServers = servers,
+            incomplete_dns = incomplete_dns,
             allServices = services,
-            allDNS = dns,
+            config = config,
             error = e
         )
     except Exception as e:

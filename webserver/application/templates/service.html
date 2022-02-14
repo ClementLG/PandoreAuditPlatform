@@ -69,29 +69,21 @@
                         <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
                             <div class="row mb-5">
                                 <span class="" style="font-size: 30px;">
-                                    Server list
+                                    Domain names list
                                 </span>
                             </div>
-                            <table id="servers" class="table table-hover" style="width:100%">
+                            <table id="dnsTable" class="table table-hover" style="width:100%">
                                 <thead>
                                     <tr>
-                                        <th>Value</th>
-                                        <th>DNS</th>
+                                        <th>Domain name</th>
                                         <th width="1px"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for server in servers %}
+                                    {% for dns in dnsInfo %}
                                     <tr>
-                                        <td>{{server.Address}}</td>
-                                        <td>
-                                            {% if server.DNS %}
-                                            {{ server.DNS.Value }}
-                                            {% else %}
-                                            <div class="text-danger">-</div>
-                                            {% endif %}
-                                        </td>
-                                        <td onmouseover="" style="cursor: pointer;" onclick="deleteServer('{{server.Address}}', {{server.ID}})"><button class="btn btn-sm btn-danger"><span class="bi bi-trash"></span></button></td>
+                                        <td>{{dns.Value}}</td>
+                                        <td onmouseover="" style="cursor: pointer;" onclick="deleteDNS('{{dns.Value}}', {{dns.ID}})"><button class="btn btn-sm btn-danger"><span class="bi bi-trash"></span></button></td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -161,19 +153,19 @@
         </div>
     </footer>
 
-    <div class="modal fade" id="modalRemoveServer" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal fade" id="modalRemoveDNS" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <form method="post">
                     <div class="modal-header">
-                        <h5 class="modal-title">Remove server</h5>
+                        <h5 class="modal-title">Remove domain name</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="text-danger"><p><strong>Do you really want to remove the following server from {{service.Name}}?</strong></p></div>
-                        <div id="removeServerValue"></div>
-                        <input type="hidden" name="removeServerID" id="removeServerID" value="">
-                        <input type="hidden" name="actionType" id="actionType" value="removeServer">
+                        <div class="text-danger"><p><strong>Do you really want to remove the following domain name from {{service.Name}}?</strong></p></div>
+                        <div id="removeDNSValue"></div>
+                        <input type="hidden" name="removeDNSID" id="removeDNSID" value="">
+                        <input type="hidden" name="actionType" id="actionType" value="removeDNS">
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
@@ -279,17 +271,17 @@
     $('select').selectpicker();
 
     $(document).ready(function () {
-        $('#servers').DataTable();
+        $('#dnsTable').DataTable();
     });
 
     $(document).ready(function () {
         $('#keywords').DataTable();
     });
 
-    function deleteServer(server, ID){
-        document.getElementById('removeServerValue').innerHTML = '<strong>Value :</strong> ' + server;
-        document.getElementById('removeServerID').value = ID;
-        $('#modalRemoveServer').modal('show');
+    function deleteDNS(dns, ID){
+        document.getElementById('removeDNSValue').innerHTML = '<strong>Value :</strong> ' + dns;
+        document.getElementById('removeDNSID').value = ID;
+        $('#modalRemoveDNS').modal('show');
     }
 
     function deleteKeyword(keyword, ID) {

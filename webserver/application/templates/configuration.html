@@ -180,13 +180,13 @@
                             <div class="row mb-5">
                                 <div class="col-sm">
                                     <span class="" style="font-size: 30px;">
-                                        Incomplete server(s)
+                                        Unsorted domain names
                                     </span>
-                                    <strong>Total : {{ unknownServers|length }}</strong>
+                                    <strong>Total : {{ incomplete_dns|length }}</strong>
                                 </div>
                                 <div class="col-md-auto">
                                     <form method="post">
-                                        <input type="hidden" name="actionType" value="autoServerClassification" />
+                                        <input type="hidden" name="actionType" value="autoDomainClassification" />
                                         <button class="btn btn-imt-green" type="submit" onclick="automaticClassification()">
                                             <span class="bi bi-gear-wide-connected"></span> Automatic classification
                                         </button>
@@ -194,19 +194,17 @@
                                 </div>
                             </div>
                             <div class="table-responsive">
-                                <table id="incompleteServers" class="table table-hover" style="width:100%">
+                                <table id="incompleteDNS" class="table table-hover" style="width:100%">
                                     <thead>
                                         <tr>
-                                            <th>Value</th>
-                                            <th>DNS</th>
+                                            <th>Domain name</th>
                                             <th width="1px"></th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for server in unknownServers %}
-                                        <tr onmouseover="" style="cursor: pointer;" onclick="assignServer('{{server.Address}}', {{ server.ID }}, {{ server.Service.ID or 0 }}, {{ server.DNS.ID or 0 }})">
-                                            <td>{{server.Address}}</td>
-                                            <td>{% if server.DNS %}{{ server.DNS.Value }}{% else %}<div class="text-danger">-</div>{% endif %}</td>
+                                        {% for dns in incomplete_dns %}
+                                        <tr onmouseover="" style="cursor: pointer;" onclick="assignDNSService({{dns.ID}}, '{{dns.Value}}')">
+                                            <td>{{dns.Value}}</td>
                                             <td><span class="bi bi-gear-fill"></span></td>
                                         </tr>
                                         {% endfor %}
@@ -238,27 +236,26 @@
         </div>
     </footer>
 
-    <div class="modal fade" id="modalAssignServerDNS" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal fade" id="modalAssignDNSService" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <form method="post">
-                    <input type="hidden" name="actionType" id="actionType" value="assignServerDNS">
-                    <input type="hidden" name="assignServerID" id="assignServerID" value="">
-                    <input type="hidden" name="assignServerAddress" id="assignServerAddress" value="">
+                    <input type="hidden" name="actionType" id="actionType" value="assignDNSService">
+                    <input type="hidden" name="assignDNSService_ID" id="assignDNSService_ID" value="">
                     <div class="modal-header">
-                        <h5 class="modal-title">Assign server to domain name</h5>
+                        <h5 class="modal-title">Assign domain name to service</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="text-danger mb-3"><p><strong>Please assign the following server to an existing domain name</strong></p></div>
+                        <div class="text-danger mb-3"><p><strong>Please assign the following domain name to an existing service</strong></p></div>
                         <div class="mb-3">
-                            <div id="assignServerValue"></div>
+                            <div id="assignDNSService_Value"></div>
                         </div>
                         <div class="mb-3">
-                            <label for="assignServerDNS"><strong>Domain name : </strong></label>
-                            <select class="selectpicker form-control" id="assignServerDNS" name="assignServerDNS" data-live-search="true" title="Select a domain name...">
-                                {% for dns in allDNS %}
-                                <option value="{{ dns.ID }}">{{ dns.Value }}</option>
+                            <label for="assignDNSService_Service"><strong>Service : </strong></label>
+                            <select class="selectpicker form-control" id="assignDNSService_Service" name="assignDNSService_Service" data-live-search="true" title="Select a domain name...">
+                                {% for service in allServices %}
+                                <option value="{{ service.ID }}">{{ service.Name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -298,7 +295,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Automatic server classification</h5>
+                    <h5 class="modal-title">Automatic domain names classification</h5>
                 </div>
                 <div class="modal-body">
                     <div id="classificationRunning">
@@ -325,8 +322,7 @@
 </html>
 
 <script>
-    $('#assignServerService').selectpicker();
-    $('#assignServerDNS').selectpicker();
+    $('#assignDNSService_Service').selectpicker();
 
     stopRefreshAnalytics = false;
 
@@ -352,30 +348,15 @@
     });
 
     $(document).ready(function () {
-        $('#incompleteServers').DataTable();
+        $('#incompleteDNS').DataTable();
     });
 
-    function assignServer(server, ID, service, dns){
-        document.getElementById('assignServerValue').innerHTML = '<strong>Value :</strong> ' + server;
-        document.getElementById('assignServerID').value = ID;
-        document.getElementById('assignServerAddress').value = server;
-
-        if (service > 0) {
-            $('#assignServerService').val(service);
-        }
-        else {
-            $('#assignServerService').val(-1);
-        }
-
-        if (dns > 0) {
-            $('#assignServerDNS').val(dns);
-        }
-        else {
-            $('#assignServerDNS').val(-1);
-        }
-
-        $('.selectpicker').selectpicker('refresh');
-        $("#modalAssignServerDNS").modal('show');
+    function assignDNSService(ID, dns){
+        document.getElementById('assignDNSService_Value').innerHTML = '<strong>Value :</strong> ' + dns;
+        document.getElementById('assignDNSService_ID').value = ID;
+        $('#assignDNSService_Service').val(-1);
+        $('#assignDNSService_Service').selectpicker('refresh');
+        $("#modalAssignDNSService").modal('show');
     }
 
     function automaticClassification() {
@@ -409,7 +390,6 @@
         stopRefreshAnalytics = true;
         document.getElementById('classificationRunning').style.display = 'none';
         document.getElementById('classificationStopping').style.display = 'block';
-        //sleep(1000);
         $.ajax({
             url: "stop_analytics",
             type: "POST",
