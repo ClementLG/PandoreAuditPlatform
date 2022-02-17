@@ -75,7 +75,7 @@ class PandoreSender:
         self.conn.commit()
 
     def create_server_dns(self, ip, domain_name):
-        self.cursor.callproc('CreateServerString', [ip, None, domain_name])
+        self.cursor.callproc('CreateServerString', [ip, domain_name])
         self.conn.commit()
 
     def path_blank_end_time(self, time):
