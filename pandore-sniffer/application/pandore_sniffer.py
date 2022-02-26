@@ -88,7 +88,7 @@ class PandoreSniffer:
                            + " )")
             cap.sniff(packet_count=1)
             cap.apply_on_packets(self.pkt_to_db, timeout=self.duration)
-            
+
         except asyncio.exceptions.TimeoutError:
             self.finish()
             print("\nEnd of the capture !")

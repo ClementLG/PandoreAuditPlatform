@@ -13,7 +13,6 @@ from random import random
 # VARIABLES=====================================================================
 
 MAX_THREAD = 4
-SNIFFER = []
 SNIFFERS_Thread = {}
 SNIFFERS_ID = {}
 CONFIG = PandoreConfig('pandore_config.ini')
@@ -33,45 +32,10 @@ def get_sniffer_config():
     return json
 
 
-def start_sniffer_subfunction():
-    if (SNIFFER and not SNIFFER[0].is_alive()) or len(SNIFFER) == 0:
-        if len(SNIFFER) > 0:
-            SNIFFER.clear()
-        EXIT_FLAG = False
-        start_sniffer_subfunction_thread()
-    else:
-        print("[INFO] Sniffer already in use")
-
-
 def start_sniffer_subfunction_thread():
     try:
-        th = threading.Thread(target=run_sniffer_capture)
-        th.daemon = True
-        SNIFFER.append(th)
-        th.start()
-    except Exception as e:
-        print("An error occurred ! \n" + str(e))
-
-
-def start_sniffer_subfunction_thread_v2():
-    try:
-        if len(SNIFFER) > 0:
-            if not SNIFFER[0].is_alive():
-                SNIFFER.clear()
-            else:
-                print("[INFO] A thread is already running !")
-        if len(SNIFFER) == 0:
-            kth = KThread(target=run_sniffer_capture)
-            SNIFFER.append(kth)
-            SNIFFER[0].start()
-    except Exception as e:
-        print("An error occurred ! \n" + str(e))
-
-
-def start_sniffer_subfunction_thread_v3():
-    try:
         # Check if there is some dead threads in the list
-        clean_thread_v2()
+        clean_thread()
         # Check if we are below the thread limit (configurable)
         if len(SNIFFERS_Thread) < MAX_THREAD:
             t_name = create_unique_thread_id()
@@ -88,19 +52,8 @@ def start_sniffer_subfunction_thread_v3():
         print("An error occurred ! \n" + str(e))
 
 
-# list_version
-def clean_thread():
-    dead_thread = []
-    for s in SNIFFER:
-        if not s.is_alive():
-            dead_thread.append(s)
-    for d in dead_thread:
-        if d in SNIFFER:
-            SNIFFER.remove(d)
-
-
 # dictionary version
-def clean_thread_v2():
+def clean_thread():
     dead_thread = []
     # Check if thread is alive
     for s in SNIFFERS_Thread:
@@ -151,8 +104,6 @@ def create_unique_thread_id():
     return None
 
 
-# TEST.append(sniffer.get_id())
-
 def run_sniffer_capture(thread_id=None):
     try:
         sniffer = PandoreSniffer()
@@ -164,29 +115,6 @@ def run_sniffer_capture(thread_id=None):
         pass
     except Exception as e:
         print("An error occurred ! \n" + str(e))
-
-
-def stop_sniffer_subfunction():
-    if len(SNIFFER) > 0:
-        if SNIFFER[0].is_alive():
-            SNIFFER[0].kill()
-            print("[INFO] Sniffer killed")
-            db = PandoreSender(
-                CONFIG.get_parameter('database', 'DB_HOST'),
-                CONFIG.get_parameter('database', 'DB_PORT'),
-                CONFIG.get_parameter('database', 'DB_USER'),
-                CONFIG.get_parameter('database', 'DB_PASSWORD'),
-                CONFIG.get_parameter('database', 'DB'))
-            res = db.path_blank_end_time(datetime.datetime.utcnow())
-            if res:
-                print("[INFO] EndTime Blank patched")
-            else:
-                print("[INFO] No EndTime Blank patched or unable to patch")
-            SNIFFER.clear()
-        else:
-            SNIFFER.clear()
-    else:
-        print("[INFO] No sniffer to kill ! Stop playing with the stop button !!")
 
 
 def stop_sniffer_subfunction_by_id(capture_id=None):
@@ -242,16 +170,6 @@ def get_status():
         else:
             dead += 1
     return str(alive) + ' running and ' + str(dead) + ' stopped'
-
-
-def get_status_old():
-    if SNIFFER and len(SNIFFER) > 0:
-        if SNIFFER[0].is_alive():
-            return 'sniffer is running'
-        else:
-            return 'sniffer is stopped'
-    else:
-        return 'sniffer is stopped'
 
 
 class KThread(threading.Thread):

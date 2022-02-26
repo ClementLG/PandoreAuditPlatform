@@ -30,7 +30,7 @@ def config_post():
 
 @sniffer_gui.route("/api/start", methods=["POST"])
 def start_sniffer():
-    start_sniffer_subfunction_thread_v3()
+    start_sniffer_subfunction_thread()
     return jsonify('Start OK')
 
 
