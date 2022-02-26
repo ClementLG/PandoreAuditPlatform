@@ -17,7 +17,6 @@ __description__ = "The agent is the application which allow to send the network 
 
 import asyncio
 import os
-from random import random
 from pandore_config import PandoreConfig
 import pandore_sender
 import pyshark
@@ -40,7 +39,7 @@ class PandoreSniffer:
         if not api:
             self.update_variable_docker()
         # Capture parameters
-        self.name = self.config.get_parameter('capture', 'CAPTURE_NAME') + '-' + str(int(random() * 1000000))
+        self.name = self.config.get_parameter('capture', 'CAPTURE_NAME')
         self.duration = int(self.config.get_parameter('capture', 'CAPTURE_DURATION'))
         self.start_time = datetime.datetime.utcnow()
         self.end_time = None
@@ -70,23 +69,26 @@ class PandoreSniffer:
             self.audited_interface,
             self.cnx_type
         )
-        # Setting up the sniffer tool
-        self.cap = pyshark.LiveCapture(
-            interface=self.audited_interface,
-            bpf_filter="( dst net " +
-                       str(self.device_network)
-                       + " or src net "
-                       + str(self.device_network)
-                       + " ) and "
-                       + "( " + str(self.custom_filter)
-                       + " )")
         # Create a buffer to avoid unnecessary requests to the db
         self.dns_buffer = {}
-        self.cap.sniff(packet_count=1)
 
     def run(self):
         try:
-            self.cap.apply_on_packets(self.pkt_to_db, timeout=self.duration)
+            if self.capture_id is None:
+                raise Exception("No able to get a capture ID")
+            # Setting up the sniffer tool
+            cap = pyshark.LiveCapture(
+                interface=self.audited_interface,
+                bpf_filter="( dst net " +
+                           str(self.device_network)
+                           + " or src net "
+                           + str(self.device_network)
+                           + " ) and "
+                           + "( " + str(self.custom_filter)
+                           + " )")
+            cap.sniff(packet_count=1)
+            cap.apply_on_packets(self.pkt_to_db, timeout=self.duration)
+            
         except asyncio.exceptions.TimeoutError:
             self.finish()
             print("\nEnd of the capture !")
