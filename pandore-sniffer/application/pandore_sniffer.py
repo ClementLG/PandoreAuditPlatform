@@ -46,6 +46,7 @@ class PandoreSniffer:
         self.description = self.config.get_parameter('capture', 'CAPTURE_DESCRIPTION')
         # Network parameters
         self.device_network = self.config.get_parameter('network', 'DEVICE_NETWORK')
+        self.device_network_ipv6 = self.config.get_parameter('network', 'DEVICE_NETWORK_IPv6')
         self.audited_interface = self.config.get_parameter('network', 'AUDITED_INTERFACE')
         self.cnx_type = self.config.get_parameter('capture', 'CAPTURE_CNX_TYPE')
         self.custom_filter = self.config.get_parameter('network', 'CUSTOM_FILTER')
@@ -76,16 +77,11 @@ class PandoreSniffer:
         try:
             if self.capture_id is None:
                 raise Exception("No able to get a capture ID")
+
             # Setting up the sniffer tool
             cap = pyshark.LiveCapture(
                 interface=self.audited_interface,
-                bpf_filter="( dst net " +
-                           str(self.device_network)
-                           + " or src net "
-                           + str(self.device_network)
-                           + " ) and "
-                           + "( " + str(self.custom_filter)
-                           + " )")
+                bpf_filter=self.generate_filter())
             cap.sniff(packet_count=1)
             cap.apply_on_packets(self.pkt_to_db, timeout=self.duration)
 
@@ -95,9 +91,9 @@ class PandoreSniffer:
         except Exception as e:
             try:
                 self.finish()
-            except:
+            finally:
                 pass
-            print("An error occurred ! \n" + e)
+            print("An error occurred ! \n" + str(e))
 
     def finish(self):
         self.db.update_capture_end_time(datetime.datetime.utcnow(), self.capture_id)
@@ -106,10 +102,48 @@ class PandoreSniffer:
     def get_id(self):
         return self.capture_id
 
+    def generate_filter(self):
+        net_filter = None
+        # Only IPv4
+        if self.device_network and not self.device_network_ipv6:
+            net_filter = "( dst net " \
+                         + str(self.device_network) \
+                         + " or src net " \
+                         + str(self.device_network) \
+                         + " )"
+        # Only IPv6
+        elif not self.device_network and self.device_network_ipv6:
+            net_filter = "( dst net " \
+                         + str(self.device_network_ipv6) \
+                         + " or src net " \
+                         + str(self.device_network_ipv6) \
+                         + " )"
+
+        # Dual stack v4/v6
+        elif self.device_network and self.device_network_ipv6:
+            net_filter = "( ( dst net " \
+                         + str(self.device_network) \
+                         + " or src net " \
+                         + str(self.device_network) \
+                         + " ) or ( dst net " \
+                         + str(self.device_network_ipv6) \
+                         + " or src net " \
+                         + str(self.device_network_ipv6) \
+                         + " ) ) "
+
+        else:
+            raise Exception('Both IPv4 and IPv6 is None !')
+
+        net_filter += " and ( " + str(self.custom_filter) + " )"
+
+        print(net_filter)
+
+        return net_filter
+
     def pkt_to_db(self, pkt):
         try:
             # console output
-            print(pkt_to_json(pkt, self.device_network))
+            print(pkt_to_json(pkt, self.device_network, self.device_network_ipv6))
 
             # refactor protocol name
             try:
@@ -121,31 +155,42 @@ class PandoreSniffer:
             except:
                 highest_layer_protocol = pkt.highest_layer
 
-            # Sniff dns asw to get ip:domain_name assoc
             try:
-                if pkt.dns:
+                # Sniff dns asw to get ip:domain_name assoc
+                if hasattr(pkt, 'dns'):
                     temp_dns, temp_ips = self.sniff_dns_info(pkt)
                     self.dns_to_db(temp_dns, temp_ips)
-            except:
-                pass
-            # Sniff tls.handshake.extensions_server_name to get ip:domain_name assoc
-            try:
-                if pkt.tls.handshake_extensions_server_name:
-                    temp_sn, temp_ip = self.sniff_tls_info(pkt)
-                    self.dns_to_db(temp_sn, temp_ip)
-            except:
-                pass
+                # Sniff tls.handshake.extensions_server_name to get ip:domain_name assoc
+                if hasattr(pkt, 'tls'):
+                    if hasattr(pkt.tls, 'handshake_extensions_server_name'):
+                        temp_sn, temp_ip = self.sniff_tls_info(pkt)
+                        self.dns_to_db(temp_sn, temp_ip)
+            except Exception as e:
+                print(e)
 
             # ADD packet in the DB
+            # ipv4 = False
+            # ipn = ipaddress.ip_network(network)
+            # ipv4 = isinstance(ipn, ipaddress.IPv4Network)
             try:
-                self.db.create_request_string(
-                    int(pkt.length),
-                    determine_direction(pkt.ip.src, self.device_network),
-                    highest_layer_protocol,
-                    determine_ip_saved(pkt.ip.src.show, pkt.ip.dst.show, self.device_network),
-                    self.check_dns_dictionary(pkt.ip.dst.show),
-                    self.capture_id
-                )
+                if hasattr(pkt, 'ip'):
+                    self.db.create_request_string(
+                        int(pkt.length),
+                        determine_direction(pkt.ip.src, self.device_network),
+                        highest_layer_protocol,
+                        determine_ip_saved(pkt.ip.src.show, pkt.ip.dst.show, self.device_network),
+                        self.check_dns_dictionary(pkt.ip.dst.show),
+                        self.capture_id
+                    )
+                elif hasattr(pkt, 'ipv6'):
+                    self.db.create_request_string(
+                        int(pkt.length),
+                        determine_direction(pkt.ipv6.src, self.device_network),
+                        highest_layer_protocol,
+                        determine_ip_saved(pkt.ipv6.src.show, pkt.ipv6.dst.show, self.device_network),
+                        self.check_dns_dictionary(pkt.ipv6.dst.show),
+                        self.capture_id
+                    )
 
                 print(self.dns_buffer)
 
@@ -153,7 +198,7 @@ class PandoreSniffer:
                 print(e)
 
         except Exception as e:
-            print("A error occurred : \n" + e)
+            print("A error occurred : \n" + str(e))
 
     def dns_to_db(self, domain_name, ip_list):
         try:
@@ -186,16 +231,23 @@ class PandoreSniffer:
                 self.populate_dns_dictionary(resp_name, ip_list)
                 return resp_name, ip_list
 
-        except:
+        finally:
             pass
 
     def sniff_tls_info(self, pkt):
         try:
             handshake_extensions_server_name = pkt.tls.handshake_extensions_server_name.show
-            if determine_direction(pkt.ip.src, self.device_network) == "1":
-                ip_assoc = [pkt.ip.dst]
+            # print(pkt.tls.handshake_extensions_server_name)
+            if hasattr(pkt, 'ip'):
+                if determine_direction(pkt.ip.src, self.device_network) == "1":
+                    ip_assoc = [pkt.ip.dst]
+                else:
+                    ip_assoc = [pkt.ip.src]
             else:
-                ip_assoc = [pkt.ip.src]
+                if determine_direction(pkt.ipv6.src, self.device_network) == "1":
+                    ip_assoc = [pkt.ipv6.dst]
+                else:
+                    ip_assoc = [pkt.ipv6.src]
             self.populate_dns_dictionary(handshake_extensions_server_name, ip_assoc)
             return handshake_extensions_server_name, ip_assoc
         except:
@@ -246,7 +298,7 @@ class PandoreSniffer:
 
 # FUNCTIONS=====================================================================
 
-def pkt_to_json(pkt, network):
+def pkt_to_json(pkt, network_v4, network_v6=None):
     try:
         # refactor protocol name
         try:
@@ -255,21 +307,35 @@ def pkt_to_json(pkt, network):
         except:
             highest_layer_protocol = pkt.highest_layer
 
-        # convert in JSON
-        pck_to_json = {
-            "timestamp": datetime.datetime.utcnow().timestamp(),
-            "IP_SRC": pkt.ip.src,
-            "IP_DST": pkt.ip.dst,
-            "DIRECTION": determine_direction(pkt.ip.src, network),
-            "L4_PROT": pkt.transport_layer,
-            "HIGHEST_LAYER": highest_layer_protocol,
-            "PACKET_SIZE": pkt.length
-        }
+        pck_to_json = None
+
+        if hasattr(pkt, 'ipv6'):
+            # convert in JSON
+            pck_to_json = {
+                "timestamp": datetime.datetime.utcnow().timestamp(),
+                "IP_SRC": pkt.ipv6.src,
+                "IP_DST": pkt.ipv6.dst,
+                "DIRECTION": determine_direction(pkt.ipv6.src, network_v6),
+                "L4_PROT": pkt.transport_layer,
+                "HIGHEST_LAYER": highest_layer_protocol,
+                "PACKET_SIZE": pkt.length
+            }
+        elif hasattr(pkt, 'ip'):
+            # convert in JSON
+            pck_to_json = {
+                "timestamp": datetime.datetime.utcnow().timestamp(),
+                "IP_SRC": pkt.ip.src,
+                "IP_DST": pkt.ip.dst,
+                "DIRECTION": determine_direction(pkt.ip.src, network_v4),
+                "L4_PROT": pkt.transport_layer,
+                "HIGHEST_LAYER": highest_layer_protocol,
+                "PACKET_SIZE": pkt.length
+            }
 
         json_dump = json.dumps(pck_to_json)
         return json_dump
 
-    except Exception as e:
+    except:
         print("Packet below L3 detected. Excluded from the output.(" + str(pkt.highest_layer) + ")")
         # print(e)
 

@@ -2,6 +2,7 @@
 
 # IMPORTS======================================================================
 import datetime
+import time
 import sys
 import mysql.connector
 from pandore_sniffer import PandoreSniffer
@@ -110,6 +111,7 @@ def run_sniffer_capture(thread_id=None):
         if thread_id is not None:
             SNIFFERS_ID[thread_id] = sniffer.get_id()
             print(SNIFFERS_ID)
+            time.sleep(2)
         sniffer.run()
     except mysql.connector.ProgrammingError as err:
         pass
