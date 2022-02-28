@@ -22,10 +22,13 @@ CONFIG = PandoreConfig('pandore_config.ini')
 # FUNCTIONS====================================================================
 
 def update_variable_config(config_json):
-    for section in config_json:
-        for parameter in config_json[section]:
-            CONFIG.update_parameter(section, parameter, config_json[section][parameter])
-    CONFIG.save_config()
+    if config_json is not None:
+        for section in config_json:
+            for parameter in config_json[section]:
+                CONFIG.update_parameter(section, parameter, config_json[section][parameter])
+        CONFIG.save_config()
+    else:
+        print("[ERROR] Just receive a NULL config !")
 
 
 def get_sniffer_config():

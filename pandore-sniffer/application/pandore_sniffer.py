@@ -46,7 +46,17 @@ class PandoreSniffer:
         self.description = self.config.get_parameter('capture', 'CAPTURE_DESCRIPTION')
         # Network parameters
         self.device_network = self.config.get_parameter('network', 'DEVICE_NETWORK')
+        if self.device_network is not None and self.device_network != 'None':
+            self.device_network = str(check_network(self.config.get_parameter('network', 'DEVICE_NETWORK')))
+        else:
+            self.device_network = None
+            print("[INFO] IPv4 disabled")
         self.device_network_ipv6 = self.config.get_parameter('network', 'DEVICE_NETWORK_IPv6')
+        if self.device_network_ipv6 is not None and self.device_network_ipv6 != 'None':
+            self.device_network_ipv6 = str(check_network(self.device_network_ipv6))
+        else:
+            self.device_network_ipv6 = None
+            print("[INFO] IPv6 disabled")
         self.audited_interface = self.config.get_parameter('network', 'AUDITED_INTERFACE')
         self.cnx_type = self.config.get_parameter('capture', 'CAPTURE_CNX_TYPE')
         self.custom_filter = self.config.get_parameter('network', 'CUSTOM_FILTER')
@@ -166,7 +176,7 @@ class PandoreSniffer:
                         temp_sn, temp_ip = self.sniff_tls_info(pkt)
                         self.dns_to_db(temp_sn, temp_ip)
             except Exception as e:
-                print(e)
+                print("A error occurred : \n" + str(e))
 
             # ADD packet in the DB
             # ipv4 = False
@@ -185,9 +195,9 @@ class PandoreSniffer:
                 elif hasattr(pkt, 'ipv6'):
                     self.db.create_request_string(
                         int(pkt.length),
-                        determine_direction(pkt.ipv6.src, self.device_network),
+                        determine_direction(pkt.ipv6.src, self.device_network_ipv6),
                         highest_layer_protocol,
-                        determine_ip_saved(pkt.ipv6.src.show, pkt.ipv6.dst.show, self.device_network),
+                        determine_ip_saved(pkt.ipv6.src.show, pkt.ipv6.dst.show, self.device_network_ipv6),
                         self.check_dns_dictionary(pkt.ipv6.dst.show),
                         self.capture_id
                     )
@@ -195,7 +205,7 @@ class PandoreSniffer:
                 print(self.dns_buffer)
 
             except Exception as e:
-                print(e)
+                print("A error occurred : \n" + str(e))
 
         except Exception as e:
             print("A error occurred : \n" + str(e))
@@ -207,8 +217,7 @@ class PandoreSniffer:
                 for ip in ip_list:
                     self.db.create_server_dns(str(ip.show), str(domain_name))
         except Exception as e:
-            print(e)
-            pass
+            print("A error occurred : \n" + str(e))
 
     def check_dns_dictionary(self, ip):
         try:
@@ -227,7 +236,7 @@ class PandoreSniffer:
                 resp_name = pkt.dns.resp_name.show
                 ip_list = pkt.dns.a.all_fields
                 ip_list_out = out_dns_layer_field(ip_list, "line")
-                print("DNS - name : " + str(resp_name) + ", IP list : " + str(ip_list_out) + ")")
+                # print("DNS - name : " + str(resp_name) + ", IP list : " + str(ip_list_out) + ")")
                 self.populate_dns_dictionary(resp_name, ip_list)
                 return resp_name, ip_list
 
@@ -244,7 +253,7 @@ class PandoreSniffer:
                 else:
                     ip_assoc = [pkt.ip.src]
             else:
-                if determine_direction(pkt.ipv6.src, self.device_network) == "1":
+                if determine_direction(pkt.ipv6.src, self.device_network_ipv6) == "1":
                     ip_assoc = [pkt.ipv6.dst]
                 else:
                     ip_assoc = [pkt.ipv6.src]
@@ -258,7 +267,10 @@ class PandoreSniffer:
         print(' CONFIG')
         print('# ' + '=' * 50)
         print('Audited interface: ' + str(self.audited_interface))
-        print('Device network: ' + str(self.device_network))
+        if self.device_network:
+            print('Device network IPv4: ' + str(self.device_network))
+        if self.device_network_ipv6:
+            print('Device network IPv6: ' + str(self.device_network_ipv6))
         start_time = datetime.datetime.now()
         end_time = start_time + datetime.timedelta(seconds=int(self.duration))
         print("Start time: " + str(start_time.strftime("%d/%m/%Y - %H:%M:%S")))
@@ -379,6 +391,19 @@ def determine_direction(src_ip, network):
         return "0"
 
 
+# Return the correct network address
+# Example: 192.168.10.1/24 --> 192.168.10.0/24
+def check_network(network):
+    ipn = ipaddress.ip_network(network)
+    if isinstance(ipn, ipaddress.IPv4Network):
+        return ipaddress.IPv4Network(network, strict=False)
+    elif isinstance(ipn, ipaddress.IPv6Network):
+        return ipaddress.IPv6Network(network, strict=False)
+    else:
+        raise Exception("Not a correct ip nework !")
+
+
+# Only the IP different to the host is send to the DB
 def determine_ip_saved(src_ip, dst_ip, network):
     if ipaddress.ip_address(src_ip) in ipaddress.ip_network(network):
         return str(dst_ip)
