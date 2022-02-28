@@ -271,6 +271,8 @@ class PandoreSniffer:
                                          str(os.environ.get('PANDORE_AUDITED_INTERFACE')))
         if os.environ.get('PANDORE_DEVICE_NETWORK') is not None:
             self.config.update_parameter('network', 'DEVICE_NETWORK', str(os.environ.get('PANDORE_DEVICE_NETWORK')))
+        if os.environ.get('PANDORE_DEVICE_NETWORK_IPv6') is not None:
+            self.config.update_parameter('network', 'DEVICE_NETWORK_IPv6', str(os.environ.get('PANDORE_DEVICE_NETWORK_IPv6')))
         if os.environ.get('PANDORE_CUSTOM_FILTER') is not None:
             self.config.update_parameter('network', 'CUSTOM_FILTER', str(os.environ.get('PANDORE_CUSTOM_FILTER')))
         if os.environ.get('PANDORE_DB_HOST') is not None:
