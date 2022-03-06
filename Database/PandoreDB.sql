@@ -275,7 +275,7 @@ END//
 
 CREATE PROCEDURE ReadCaptureServicesStats(IN ID INT)
 BEGIN
-	SELECT * FROM (SELECT Name, SUM(DownTrafic) AS DownTrafic, SUM(UpTrafic) AS UpTrafic from (SELECT (CASE WHEN Service_Name IS NULL THEN (CASE WHEN DNS_Value IS NULL THEN Server_Address ELSE DNS_Value END) ELSE Service_Name END) AS Name, SUM(CASE WHEN CaptureRequest_Direction = 1 THEN CaptureRequest_PacketSize ELSE 0 END) AS UpTrafic, SUM(CASE WHEN CaptureRequest_Direction = 0 THEN CaptureRequest_PacketSize ELSE 0 END) AS DownTrafic FROM capture_request INNER JOIN Server ON CaptureRequest_Server = Server_ID INNER JOIN DNS ON Server_DNS = DNS_ID LEFT JOIN Service ON DNS_Service = Service_ID WHERE CaptureRequest_Capture = ID GROUP BY server_address) AS subTable GROUP BY Name) AS otherSubTable ORDER BY (DownTrafic+UpTrafic) DESC;
+	SELECT * FROM (SELECT Name, SUM(DownTrafic) AS DownTrafic, SUM(UpTrafic) AS UpTrafic from (SELECT (CASE WHEN Service_Name IS NULL THEN (CASE WHEN DNS_Value IS NULL THEN Server_Address ELSE DNS_Value END) ELSE Service_Name END) AS Name, SUM(CASE WHEN CaptureRequest_Direction = 1 THEN CaptureRequest_PacketSize ELSE 0 END) AS UpTrafic, SUM(CASE WHEN CaptureRequest_Direction = 0 THEN CaptureRequest_PacketSize ELSE 0 END) AS DownTrafic FROM Capture_Request LEFT JOIN Server ON CaptureRequest_Server = Server_ID LEFT JOIN DNS ON Server_DNS = DNS_ID LEFT JOIN Service ON DNS_Service = Service_ID WHERE CaptureRequest_Capture = ID GROUP BY Server_Address) AS subTable GROUP BY Name) AS otherSubTable ORDER BY (DownTrafic+UpTrafic) DESC;
 END//
 
 CREATE PROCEDURE ReadRunningCapture()
