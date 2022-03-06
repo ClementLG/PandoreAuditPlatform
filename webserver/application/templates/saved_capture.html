@@ -49,6 +49,7 @@
         </header>
         <content>
             <div class="container-fluid px-5 py-5">
+                <button type="button" class="btn btn-danger mb-3" data-bs-toggle="modal" data-bs-target="#modalDeleteCapture">Delete capture</button>
                 <div class="row">
                     <div class="col-sm-8 mb-3">
                         <div class="card shadow mb-3">
@@ -145,14 +146,27 @@
                     <div class="col-sm-5">
                         <div class="card shadow mb-3">
                             <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
-                                <div class="row">
+                                <div class="row mb-5">
                                     <span class="bi bi-activity" style="font-size: 30px;">
                                         Services
                                     </span>
                                 </div>
-                                <div class="row">
-                                    <div id="serviceChart" style="height: 40vh; width: 100%;"></div>
+                                {% set maxDownloadUpload = (stats | sum(attribute='DownTrafic')) + (stats | sum(attribute='UpTrafic')) %}
+                                {% for serviceStat in stats %}
+                                <p>{{serviceStat.ServiceName}}</p>
+                                <div class="row mb-1">
+                                    <div class="col-auto">
+                                        <span class="badge bg-imt-blue">Download : {{(serviceStat.DownTrafic/(1024*1024*1024))|round(2)|string + ' GB' if (serviceStat.DownTrafic >= (1024*1024*1024)) else ((serviceStat.DownTrafic/(1024*1024))|round(2)|string + ' MB' if (serviceStat.DownTrafic >= (1024*1024)) else ((serviceStat.DownTrafic/(1024))|round(2)|string + ' kB' if (serviceStat.DownTrafic >= (1024)) else (serviceStat.DownTrafic|string + ' B')))}}</span>
+                                    </div>
+                                    <div class="col-auto">
+                                        <span class="badge bg-imt-green">Upload : {{(serviceStat.UpTrafic/(1024*1024*1024))|round(2)|string + ' GB' if (serviceStat.UpTrafic >= (1024*1024*1024)) else ((serviceStat.UpTrafic/(1024*1024))|round(2)|string + ' MB' if (serviceStat.UpTrafic >= (1024*1024)) else ((serviceStat.UpTrafic/(1024))|round(2)|string + ' kB' if (serviceStat.UpTrafic >= (1024)) else (serviceStat.UpTrafic|string + ' B')))}}</span>
+                                    </div>
                                 </div>
+                                <div class="progress mb-3">
+                                    <div class="progress-bar progress-bar-striped bg-imt-blue" role="progressbar" style="width: {{(serviceStat.DownTrafic*100)/maxDownloadUpload}}%" aria-valuenow="{{serviceStat.DownTrafic}}" aria-valuemin="0" aria-valuemax="{{maxDownloadUpload}}"></span></div>
+                                    <div class="progress-bar progress-bar-striped bg-imt-green" role="progressbar" style="width: {{(serviceStat.UpTrafic*100)/maxDownloadUpload}}%" aria-valuenow="{{serviceStat.UpTrafic}}" aria-valuemin="0" aria-valuemax="{{maxDownloadUpload}}"></div>
+                                </div>
+                                {% endfor %}
                             </div>
                         </div>
                     </div>
@@ -211,6 +225,28 @@
                 </div>
                 {% endif %}
             </div>
+
+            <div class="modal fade" id="modalDeleteCapture" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <form method="post">
+                            <input type="hidden" name="action" value="deleteCapture" />
+                            <div class="modal-header">
+                                <h5 class="modal-title">Delete capture</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="text-danger">Do you really want to delete this capture ?</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <button type="submit" class="btn btn-danger">Delete</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
         </content>
         <footer class="mt-auto bg-imt-green py-3 px-3">
             <div class="row">

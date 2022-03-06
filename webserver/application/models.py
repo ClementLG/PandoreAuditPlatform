@@ -136,10 +136,10 @@ class PandoreAnalyticsServiceKeywords():
 
 class PandoreServiceStat():
     ServiceName: str
-    UpTrafic : float
-    DownTrafic: float
+    UpTrafic : int
+    DownTrafic: int
 
-    def __init__(self, ServiceName: str, UpTrafic: float, DownTrafic: float) -> None:
+    def __init__(self, ServiceName: str, UpTrafic: int, DownTrafic: int) -> None:
         self.ServiceName = ServiceName
         self.UpTrafic = UpTrafic
         self.DownTrafic = DownTrafic

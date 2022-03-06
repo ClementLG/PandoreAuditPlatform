@@ -27,17 +27,17 @@ def second_to_duration(duration_second: int) -> str:
 
     return hours + ":" + minutes + ":" + str(duration_second)
 
-def octet_to_string(octet: int) -> str:
+def octet_to_string(octet: int, decimals: int) -> str:
     unit = "B"
 
     if(octet < 1024):
-        octet = str(octet)
+        octet = str(round(octet, decimals))
         unit = "B"
     elif(octet < (1024*1024)):
-        octet = str(int(octet/1024))
+        octet = str(round(octet/1024, decimals))
         unit = "kB"
     else:
-        octet = str(int(octet/(1024*1024)))
+        octet = str(round(octet/(1024*1024), decimals))
         unit = "MB"
 
     return octet + " " + unit
