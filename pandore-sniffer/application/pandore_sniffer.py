@@ -83,6 +83,7 @@ class PandoreSniffer:
         # Create a buffer to avoid unnecessary requests to the db
         self.dns_buffer = {}
 
+    # Run a capture using this method
     def run(self):
         try:
             if self.capture_id is None:
@@ -106,13 +107,16 @@ class PandoreSniffer:
                 pass
             print("An error occurred ! \n" + str(e))
 
+    # Finish properly a capture
     def finish(self):
         self.db.update_capture_end_time(datetime.datetime.utcnow(), self.capture_id)
         self.db.close_db()
 
+    # Return the capture ID
     def get_id(self):
         return self.capture_id
 
+    # Generate the bpf filter according to the network config
     def generate_filter(self):
         net_filter = None
         # Only IPv4
@@ -151,6 +155,7 @@ class PandoreSniffer:
 
         return net_filter
 
+    # Send the packets to the database
     def pkt_to_db(self, pkt):
 
         # console output
@@ -201,6 +206,7 @@ class PandoreSniffer:
         except Exception as e:
             print("An error occurred (creating packet in db) : \n" + str(e))
 
+    # Send domain and ip found in DB
     def dns_to_db(self, domain_name, ip_list):
         try:
             if domain_name is not None:
@@ -210,16 +216,19 @@ class PandoreSniffer:
         except Exception as e:
             print("An error occurred (push dns to DB) : \n" + str(e))
 
+    # Check if an ip exist in the dns buffer dictionary
     def check_dns_dictionary(self, ip):
         try:
             return self.dns_buffer[ip]
         except:
             return None
 
+    # Allow to populate the dns dictionary with new association Domain/IP
     def populate_dns_dictionary(self, name, ip_layer_field):
         for ip in ip_layer_field:
             self.dns_buffer[ip.show] = name
 
+    # Handle DNS response to get data
     def sniff_dns_info(self, pkt):
         try:
             if pkt.dns.resp_name:
@@ -234,6 +243,7 @@ class PandoreSniffer:
         finally:
             pass
 
+    # Handle TLS hello packet to get data
     def sniff_tls_info(self, pkt):
         try:
             handshake_extensions_server_name = pkt.tls.handshake_extensions_server_name.show
@@ -250,9 +260,10 @@ class PandoreSniffer:
                     ip_assoc = [pkt.ipv6.src]
             self.populate_dns_dictionary(handshake_extensions_server_name, ip_assoc)
             return handshake_extensions_server_name, ip_assoc
-        except:
+        finally:
             pass
 
+    # print the current config
     def print_agent_config(self):
         print('# ' + '=' * 50)
         print(' CONFIG')
@@ -268,6 +279,7 @@ class PandoreSniffer:
         print("Expected end time: " + str(end_time.strftime("%d/%m/%Y - %H:%M:%S")))
         print('# ' + '=' * 50)
 
+    # Update local program variable using OS variable (useful with docker)
     def update_variable_docker(self):
         if os.environ.get('PANDORE_AUDITED_INTERFACE') is not None:
             self.config.update_parameter('network', 'AUDITED_INTERFACE',
@@ -275,7 +287,8 @@ class PandoreSniffer:
         if os.environ.get('PANDORE_DEVICE_NETWORK') is not None:
             self.config.update_parameter('network', 'DEVICE_NETWORK', str(os.environ.get('PANDORE_DEVICE_NETWORK')))
         if os.environ.get('PANDORE_DEVICE_NETWORK_IPv6') is not None:
-            self.config.update_parameter('network', 'DEVICE_NETWORK_IPv6', str(os.environ.get('PANDORE_DEVICE_NETWORK_IPv6')))
+            self.config.update_parameter('network', 'DEVICE_NETWORK_IPv6',
+                                         str(os.environ.get('PANDORE_DEVICE_NETWORK_IPv6')))
         if os.environ.get('PANDORE_CUSTOM_FILTER') is not None:
             self.config.update_parameter('network', 'CUSTOM_FILTER', str(os.environ.get('PANDORE_CUSTOM_FILTER')))
         if os.environ.get('PANDORE_DB_HOST') is not None:
@@ -303,6 +316,7 @@ class PandoreSniffer:
 
 # FUNCTIONS=====================================================================
 
+# Allow to print a packet as a json (for logging for example)
 def pkt_to_json(pkt, network_v4, network_v6=None):
     try:
 
@@ -340,6 +354,8 @@ def pkt_to_json(pkt, network_v4, network_v6=None):
         print("Packet below L3 detected. Excluded from the output.(" + str(pkt.highest_layer) + ")")
         # print(e)
 
+
+# convert data bytes units
 def convert_size(size_bytes):
     if size_bytes == 0:
         return "0B"
@@ -361,6 +377,7 @@ def out_dns_layer_field(ip_layer_field, output_type):
     return out
 
 
+# Return the direction of a packet (upload or download)
 def determine_direction(src_ip, network):
     if ipaddress.ip_address(src_ip) in ipaddress.ip_network(network):
         # upload
@@ -379,7 +396,7 @@ def check_network(network):
     elif isinstance(ipn, ipaddress.IPv6Network):
         return ipaddress.IPv6Network(network, strict=False)
     else:
-        raise Exception("Not a correct ip nework !")
+        raise Exception("Not a correct ip Network !")
 
 
 # Only the IP different to the host is send to the DB
@@ -390,9 +407,10 @@ def determine_ip_saved(src_ip, dst_ip, network):
         return str(src_ip)
 
 
+# Print project info
 def print_project_info():
     print('# ' + '=' * 50)
-    print(' INFOS')
+    print(' INFO')
     print('# ' + '=' * 50)
     print('Project : ' + __project__)
     print('Maintainer : ' + __maintainer__)
