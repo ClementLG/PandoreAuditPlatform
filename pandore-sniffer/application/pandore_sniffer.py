@@ -166,8 +166,11 @@ class PandoreSniffer:
         try:
             # Sniff dns asw to get ip:domain_name assoc
             if hasattr(pkt, 'dns'):
-                temp_dns, temp_ips = self.sniff_dns_info(pkt)
-                self.dns_to_db(temp_dns, temp_ips)
+                if hasattr(pkt.dns, 'resp_name'):
+                    if hasattr(pkt.dns, 'a'):
+                        temp_dns, temp_ips = self.sniff_dns_info(pkt)
+                        if temp_dns is not None and temp_ips is not None:
+                            self.dns_to_db(temp_dns, temp_ips)
             # Sniff tls.handshake.extensions_server_name to get ip:domain_name assoc
             if hasattr(pkt, 'tls'):
                 if hasattr(pkt.tls, 'handshake_extensions_server_name'):
@@ -225,41 +228,57 @@ class PandoreSniffer:
 
     # Allow to populate the dns dictionary with new association Domain/IP
     def populate_dns_dictionary(self, name, ip_layer_field):
-        for ip in ip_layer_field:
-            self.dns_buffer[ip.show] = name
+        if name is not None and ip_layer_field is not None:
+            for ip in ip_layer_field:
+                self.dns_buffer[ip.show] = name
 
     # Handle DNS response to get data
     def sniff_dns_info(self, pkt):
         try:
-            if pkt.dns.resp_name:
-                # print(pkt.dns)
-                resp_name = pkt.dns.resp_name.show
-                ip_list = pkt.dns.a.all_fields
-                ip_list_out = out_dns_layer_field(ip_list, "line")
-                # print("DNS - name : " + str(resp_name) + ", IP list : " + str(ip_list_out) + ")")
-                self.populate_dns_dictionary(resp_name, ip_list)
-                return resp_name, ip_list
+            resp_name = None
+            ip_list = None
+            if hasattr(pkt, 'dns'):
+                if hasattr(pkt.dns, 'resp_name'):
+                    resp_name = pkt.dns.resp_name.show
+                    if hasattr(pkt.dns, 'a'):
+                        if hasattr(pkt.dns.a, 'all_fields'):
+                            ip_list = pkt.dns.a.all_fields
 
-        finally:
-            pass
+                    if resp_name is not None and ip_list is not None:
+                        self.populate_dns_dictionary(resp_name, ip_list)
+                    else:
+                        resp_name = None
+
+                    return resp_name, ip_list
+
+            return resp_name, ip_list
+
+        except Exception as e:
+            print(e)
 
     # Handle TLS hello packet to get data
     def sniff_tls_info(self, pkt):
         try:
             handshake_extensions_server_name = pkt.tls.handshake_extensions_server_name.show
             # print(pkt.tls.handshake_extensions_server_name)
+            ip_assoc = None
+
             if hasattr(pkt, 'ip'):
                 if determine_direction(pkt.ip.src, self.device_network) == "1":
                     ip_assoc = [pkt.ip.dst]
                 else:
                     ip_assoc = [pkt.ip.src]
-            else:
+
+            elif hasattr(pkt, 'ipv6'):
                 if determine_direction(pkt.ipv6.src, self.device_network_ipv6) == "1":
                     ip_assoc = [pkt.ipv6.dst]
                 else:
                     ip_assoc = [pkt.ipv6.src]
+
             self.populate_dns_dictionary(handshake_extensions_server_name, ip_assoc)
+
             return handshake_extensions_server_name, ip_assoc
+
         finally:
             pass
 
