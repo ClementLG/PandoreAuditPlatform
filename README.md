@@ -21,10 +21,10 @@ The project is carried out in the third year. It starts in September and ends in
 - Capture traffic from any network interface
 - Viewing the results in a GUI (web) :
   - Upload and Download traffic statistic
-  - Servers reached (ip, DNS name and associated company)
-  - A score on captured traffic (**to be determined**)
-  - A focus on unwanted, unnecessary traffic 
-- Export results (JSON or other)
+  - Servers reached (ip, DNS name and associated application/service)
+  - Graph of packets exchanged on a timeline
+  - A score based on captured traffic (To tunn following your needs)
+- Control the probe remotely using its API
 
 ##  _Tech_
 
