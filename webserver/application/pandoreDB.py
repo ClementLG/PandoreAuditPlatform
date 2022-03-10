@@ -123,9 +123,9 @@ class PandoreDB:
         for result in self.cursor.stored_results():
             for res in result.fetchall():
                 stats.append(PandoreServiceStat(
-                    res["Service_Name"],
-                    float(res["UpTrafic"]),
-                    float(res["DownTrafic"])
+                    res["Name"],
+                    int(res["UpTrafic"]),
+                    int(res["DownTrafic"])
                     ))
         return stats
 
@@ -139,6 +139,10 @@ class PandoreDB:
                 if res["UP"] is not None:
                     trafic["Up"] = int(res["UP"])
         return trafic
+
+    def delete_capture_by_id(self, id: int):
+        self.cursor.callproc('DeleteCaptureByID', [id])
+        self.conn.commit()
 
     # Capture request
     def find_all_capture_request(self, id: int) -> list[PandoreCaptureRequest]:

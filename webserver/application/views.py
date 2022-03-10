@@ -1,9 +1,9 @@
-from flask import Flask, request, redirect, url_for, render_template, json
 from datetime import datetime
 from application import app, pandoreDB, pandoreException, utils
 from application.pandore_analytics import PandoreAnalytics
 from application.models import *
-import requests, math, time
+import requests, math, time, flask
+from flask import redirect, url_for, render_template, json, request, Response
 
 PandoreAnalyticsRunner = PandoreAnalytics()
 
@@ -22,53 +22,60 @@ def index():
         if request.method == "POST":
             if 'action' not in request.form: raise pandoreException.PandoreException("Action is missing")
             else:
-                if request.form['action'] == 'startCapture':
+                if 'action' not in request.form: raise pandoreException.PandoreException("Action is missing")
+                elif request.form['action'] == 'startCapture':
+                    ipv4 = None
+                    ipv6 = None
                     if 'capture_name' not in request.form: raise pandoreException.PandoreException("Capture name is missing")
-                    if 'capture_description' not in request.form: raise pandoreException.PandoreException("Capture description is missing")
-                    if 'capture_connection_type' not in request.form: raise pandoreException.PandoreException("Connection type is missing")
-                    if 'interface_name' not in request.form: raise pandoreException.PandoreException("Interface name is missing")
-                    if 'interface_name' not in request.form: raise pandoreException.PandoreException("Interface name is missing")
-                    if 'capture_duration' not in request.form: raise pandoreException.PandoreException("Capture duration is missing")
-                    if 'ip_w' not in request.form: raise pandoreException.PandoreException("IP is incomplete")
-                    if 'ip_x' not in request.form: raise pandoreException.PandoreException("IP is incomplete")
-                    if 'ip_y' not in request.form: raise pandoreException.PandoreException("IP is incomplete")
-                    if 'ip_z' not in request.form: raise pandoreException.PandoreException("IP is incomplete")
-                    if 'netmask_w' not in request.form: raise pandoreException.PandoreException("Netmask is incomplete")
-                    if 'netmask_x' not in request.form: raise pandoreException.PandoreException("Netmask is incomplete")
-                    if 'netmask_y' not in request.form: raise pandoreException.PandoreException("Netmask is incomplete")
-                    if 'netmask_z' not in request.form: raise pandoreException.PandoreException("Netmask is incomplete")
-                    elif len(request.form['capture_name']) <= 0 or len(request.form['capture_name']) > 255:
-                        raise pandoreException.PandoreException("Capture name must contain between 1 and 255 characters")
-                    elif len(request.form['capture_description']) <= 0 or len(request.form['capture_description']) > 1000:
-                        raise pandoreException.PandoreException("Capture description must contain between 1 and 1000 characters")
-                    elif len(request.form['capture_connection_type']) <= 0 or len(request.form['capture_connection_type']) > 255:
-                        raise pandoreException.PandoreException("Capture connection type must contain between 1 and 255 characters")
-                    elif len(request.form['interface_name']) <= 0 or len(request.form['interface_name']) > 255:
-                        raise pandoreException.PandoreException("Interface name must contain between 1 and 255 characters")
-                    elif not request.form['capture_duration'].isnumeric():
-                        raise pandoreException.PandoreException("Capture duration must be a number")
-                    elif int(request.form['capture_duration']) <= 0:
-                        raise pandoreException.PandoreException("Capture duration must be greater than 0")
-                    elif not request.form['ip_w'].isnumeric() or not request.form['ip_x'].isnumeric() or not request.form['ip_y'].isnumeric() or not request.form['ip_z'].isnumeric():
-                        raise pandoreException.PandoreException("Audited device(s) IP must only contain numbers")
-                    elif (int(request.form['ip_w']) < 0 or int(request.form['ip_w']) > 255) or (int(request.form['ip_x']) < 0 or int(request.form['ip_x']) > 255) or (int(request.form['ip_y']) < 0 or int(request.form['ip_y']) > 255) or (int(request.form['ip_z']) < 0 or int(request.form['ip_z']) > 255):
-                        raise pandoreException.PandoreException("Invalid IP")
-                    elif not request.form['netmask_w'].isnumeric() or not request.form['netmask_x'].isnumeric() or not request.form['netmask_y'].isnumeric() or not request.form['netmask_z'].isnumeric():
-                        raise pandoreException.PandoreException("Audited device(s) netmask must only contain numbers")
-                    elif (int(request.form['netmask_w']) < 0 or int(request.form['netmask_w']) > 255) or (int(request.form['netmask_x']) < 0 or int(request.form['netmask_x']) > 255) or (int(request.form['netmask_y']) < 0 or int(request.form['netmask_y']) > 255) or (int(request.form['netmask_z']) < 0 or int(request.form['netmask_z']) > 255):
-                        raise pandoreException.PandoreException("Invalid netmask")
-                    netmask = sum(bin(int(x)).count('1') for x in (request.form['netmask_w'] + "." + request.form['netmask_x'] + "." + request.form['netmask_y'] + "." + request.form['netmask_z']).split('.'))
-                    ip = request.form['ip_w'] + "." + request.form['ip_x'] + "." + request.form['ip_y'] + "." + request.form['ip_z']
+                    elif 'capture_duration_hour' not in request.form: raise pandoreException.PandoreException("Capture duration hour is missing")
+                    elif 'capture_duration_minute' not in request.form: raise pandoreException.PandoreException("Capture duration minute is missing")
+                    elif 'capture_duration_second' not in request.form: raise pandoreException.PandoreException("Capture duration second is missing")
+                    elif 'capture_description' not in request.form: raise pandoreException.PandoreException("Capture description is missing")
+                    elif 'capture_connection_type' not in request.form: raise pandoreException.PandoreException("Connection type is missing")
+                    elif 'capture_interface_name' not in request.form: raise pandoreException.PandoreException("Interface name is missing")
+                    
+                    if('switch_ipv4' in request.form and bool(request.form['switch_ipv4'])):
+                        if 'ipv4_netmask' not in request.form: raise pandoreException.PandoreException("IPv4 netmask is missing")
+                        elif int(request.form['ipv4_netmask']) < 0 or int(request.form['ipv4_netmask']) > 32: raise pandoreException.PandoreException("Invalid IPv4 netmask value")
+                        for i in range(4):
+                            if "ipv4_" + str(i+1) not in request.form: raise pandoreException.PandoreException("Capture IPv4 value missing at position " + str(i+1))
+                            if len(request.form["ipv4_" + str(i+1)]) == 0: raise pandoreException.PandoreException("Capture IPv4 invalid value at position " + str(i+1))
+                            if int(request.form["ipv4_" + str(i+1)]) < 0 or int(request.form["ipv4_" + str(i+1)]) > 255: raise pandoreException.PandoreException("Capture IPv4 invalid value at position " + str(i+1))
+                        ipv4 = str(request.form["ipv4_1"]) + "." + str(request.form["ipv4_2"]) + "." + str(request.form["ipv4_3"]) + "." + str(request.form["ipv4_4"]) + "/" + str(request.form["ipv4_netmask"])
+                    
+                    if('switch_ipv6' in request.form and bool(request.form['switch_ipv6'])):
+                        if 'ipv6_netmask' not in request.form: raise pandoreException.PandoreException("IPv6 netmask is missing")
+                        elif int(request.form['ipv6_netmask']) < 0 or int(request.form['ipv6_netmask']) > 128: raise pandoreException.PandoreException("Invalid IPv6 netmask value")
+                        for i in range(8):
+                            if "ipv6_" + str(i+1) not in request.form: raise pandoreException.PandoreException("Capture IPv6 value missing at position " + str(i+1))
+                            if(len(request.form["ipv6_" + str(i+1)]) != 4): raise pandoreException.PandoreException("Capture IPv6 invalid value at position " + str(i+1))
+                            else:
+                                for c in request.form["ipv6_" + str(i+1)]:
+                                    if (not ((ord(c) >= 48 and ord(c) <= 57) or (ord(c) >= 97 and ord(c) <= 102))): raise pandoreException.PandoreException("Capture IPv6 invalid value at position " + str(i+1))
+                        ipv6 = str(request.form["ipv6_1"]) + ":" + str(request.form["ipv6_2"]) + ":" + str(request.form["ipv6_3"]) + ":" + str(request.form["ipv6_4"]) + ":" + str(request.form["ipv6_5"]) + ":" + str(request.form["ipv6_6"]) + ":" + str(request.form["ipv6_7"]) + ":" + str(request.form["ipv6_8"]) + "/" + str(request.form["ipv6_netmask"])
+                    
+                    if ipv4 is None and ipv6 is None: raise pandoreException.PandoreException("IPv4 or IPv6 must be selected")
+
+                    if len(request.form['capture_name']) <= 0 or len(request.form['capture_name']) > 255: raise pandoreException.PandoreException("Capture name must contain between 1 and 255 characters")
+                    elif len(request.form['capture_description']) <= 0 or len(request.form['capture_description']) > 1000: raise pandoreException.PandoreException("Capture description must contain between 1 and 1000 characters")
+                    elif len(request.form['capture_connection_type']) <= 0 or len(request.form['capture_connection_type']) > 255: raise pandoreException.PandoreException("Capture connection type must contain between 1 and 255 characters")
+                    elif len(request.form['capture_interface_name']) <= 0 or len(request.form['capture_interface_name']) > 255: raise pandoreException.PandoreException("Interface name must contain between 1 and 255 characters")
+                    elif int(request.form['capture_duration_hour']) < 0: raise pandoreException.PandoreException("Capture duration hour must be greater or equal to 0")
+                    elif int(request.form['capture_duration_minute']) < 0 or int(request.form['capture_duration_minute']) > 59: raise pandoreException.PandoreException("Capture duration minute must be between 0 and 59")
+                    elif int(request.form['capture_duration_second']) < 0 or int(request.form['capture_duration_second']) > 59: raise pandoreException.PandoreException("Capture duration second must be between 0 and 59")
+                    elif int(request.form['capture_duration_hour']) == 0 and int(request.form['capture_duration_minute']) == 0 and int(request.form['capture_duration_second']) == 0: raise pandoreException.PandoreException("Capture duration must be greater than 0 second")
+
                     data = {
                         "capture": {
                             "CAPTURE_CNX_TYPE": request.form['capture_connection_type'],
                             "CAPTURE_DESCRIPTION": request.form['capture_description'],
-                            "CAPTURE_DURATION": int(request.form['capture_duration']),
+                            "CAPTURE_DURATION": int(request.form['capture_duration_hour'])*3600 + int(request.form['capture_duration_minute'])*60 + int(request.form['capture_duration_second']),
                             "CAPTURE_NAME": request.form['capture_name']
                         },
                         "network": {
-                            "AUDITED_INTERFACE": request.form['interface_name'],
-                            "DEVICE_NETWORK": ip + "/" + str(netmask)
+                            "AUDITED_INTERFACE": request.form['capture_interface_name'],
+                            "DEVICE_NETWORK": ipv4 if ipv4 is not None else "null",
+                            "DEVICE_NETWORK_IPv6": ipv6 if ipv6 is not None else "null"
                         }
                     }
                     requests.post(configuration.SNIFFER_API_ADDRESS + "/configuration", json=data, timeout=10)
@@ -103,6 +110,79 @@ def index():
             error=e
         )
 
+@app.route('/export_database', methods= ['GET'])
+def export_database():
+    jsonSave = {}
+    db = pandoreDB.PandoreDB()
+    configuration = db.get_configuration()
+    jsonSave["Configuration"] = {
+                "NUTRISCORE_REFERENCE_FREQUENCY": configuration.NUTRISCORE_REFERENCE_FREQUENCY,
+                "NUTRISCORE_REFERENCE_DEBIT": configuration.NUTRISCORE_REFERENCE_DEBIT,
+                "NUTRISCORE_REFERENCE_DIVERSITY": configuration.NUTRISCORE_REFERENCE_DIVERSITY,
+                "NUTRISCORE_WEIGHT_FREQUENCY": configuration.NUTRISCORE_WEIGHT_FREQUENCY,
+                "NUTRISCORE_WEIGHT_DEBIT": configuration.NUTRISCORE_WEIGHT_DEBIT,
+                "NUTRISCORE_WEIGHT_DIVERSITY": configuration.NUTRISCORE_WEIGHT_DIVERSITY,
+                "NUTRISCORE_SIGMOIDE_SLOPE": configuration.NUTRISCORE_SIGMOIDE_SLOPE,
+                "NUTRISCORE_AVERAGE_TYPE": configuration.NUTRISCORE_AVERAGE_TYPE,
+                "SNIFFER_API_ADDRESS": configuration.SNIFFER_API_ADDRESS
+            }
+    servicesList = db.find_all_services()
+    services = {}
+    for service in servicesList:
+        regexList = db.find_all_keyword_by_service(service.ID)
+        regexs = []
+        for regex in regexList:
+            regexs.append(regex.Value)
+        services[service.Name] = regexs
+    jsonSave["Services"] = services
+    db.close_db()
+    return Response(json.dumps(jsonSave, indent = 4), mimetype="text/plain", headers={"Content-Disposition": "attachment;filename=Pandore_save_" + datetime.now().strftime("%d%m%Y%H%M%S") + ".psave"})
+
+@app.route('/import_database', methods= ['POST'])
+def import_database():
+    try:
+        if request.method == 'POST':
+            if 'pandore_save_file' not in request.files:
+                raise pandoreException.PandoreException("No pandore save file uploaded")
+            elif request.files['pandore_save_file'].filename.split('.')[len(request.files['pandore_save_file'].filename.split('.'))-1] != "psave":
+                raise pandoreException.PandoreException("Invalid pandore save file")
+            else: 
+                data = json.load(request.files['pandore_save_file'].stream)
+                Configuration = PandoreConfiguration(
+                        data["Configuration"]["NUTRISCORE_REFERENCE_FREQUENCY"],
+                        data["Configuration"]["NUTRISCORE_REFERENCE_DEBIT"],
+                        data["Configuration"]["NUTRISCORE_REFERENCE_DIVERSITY"],
+                        data["Configuration"]["NUTRISCORE_WEIGHT_FREQUENCY"],
+                        data["Configuration"]["NUTRISCORE_WEIGHT_DEBIT"],
+                        data["Configuration"]["NUTRISCORE_WEIGHT_DIVERSITY"],
+                        data["Configuration"]["NUTRISCORE_SIGMOIDE_SLOPE"],
+                        data["Configuration"]["NUTRISCORE_AVERAGE_TYPE"],
+                        data["Configuration"]["SNIFFER_API_ADDRESS"]
+                    )
+                db = pandoreDB.PandoreDB()
+                db.update_configuration(Configuration)
+                for service in data["Services"]:
+                    ServiceInDB = db.find_service_by_name(service)
+                    if ServiceInDB is None:
+                        db.create_service(PandoreService(None, service))
+                        ServiceInDB = db.find_service_by_name(service)
+                    RegexsInDB = db.find_all_keyword_by_service(ServiceInDB.ID)
+                    for regex in data["Services"][service]:
+                        if not any(x.Value == regex for x in RegexsInDB):
+                            db.create_service_keyword(PandoreServiceKeyword(None, regex, ServiceInDB))
+                db.close_db()
+                return redirect(url_for('configurations'))
+
+    except Exception as e:
+        try:
+            if db :
+                db.close_db()
+        except:
+            pass
+        return render_template(
+            "error.html",
+            error=e
+        )
 @app.route('/get_running_captures', methods = ['POST', 'GET'])
 def get_running_captures():
     if(request.method == 'GET'):
@@ -120,8 +200,8 @@ def get_running_captures():
                 data["description"] = capture.Description + " | " + capture.ConnectionType + " | " + capture.Interface
                 data["start_time"] = capture.StartTime.strftime("%d/%m/%Y %H:%M:%S")
                 data["duration"] = utils.second_to_duration((datetime.utcnow() - capture.StartTime).total_seconds())
-                data["ttdown"] = utils.octet_to_string(total_trafic['Down'])
-                data["ttup"] = utils.octet_to_string(total_trafic['Up'])
+                data["ttdown"] = utils.octet_to_string(total_trafic['Down'], 2)
+                data["ttup"] = utils.octet_to_string(total_trafic['Up'], 2)
                 captures.append(data)
         db.close_db()
         response = app.response_class(response=json.dumps(captures),status=200,mimetype='application/json')
@@ -197,7 +277,7 @@ def service(id):
             "service.html",
             service=serviceInfo,
             dnsInfo=dnsInfo,
-            keywords=keywordList,
+            keywords=keywordList
             )
     except pandoreException.PandoreException as e:
         if db :
@@ -205,7 +285,6 @@ def service(id):
         return render_template(
             "service.html",
             service=serviceInfo,
-            servers=serversInfo,
             keywords = keywordList,
             error=e
             )
@@ -220,7 +299,7 @@ def service(id):
             error=e
         )
 
-@app.route('/saved_capture/<id>')
+@app.route('/saved_capture/<id>', methods = ['GET', 'POST'])
 def saved_capture(id):
     try:
         if not id or not id.isnumeric():
@@ -232,14 +311,20 @@ def saved_capture(id):
         statistics = db.get_capture_service_stat(id)
         total_trafic = db.get_capture_total_trafic(id)
         config = db.get_configuration()
+        if (flask.request.method == "POST"):
+            if "action" in flask.request.form:
+                if flask.request.form["action"] == "deleteCapture":
+                    db.delete_capture_by_id(id)
+                    db.close_db()
+                    return redirect(url_for('saved_captures'))
         db.close_db()
 
         if not capture:
             return redirect(url_for('saved_captures'))
 
         string_duration = utils.second_to_duration((capture.EndTime - capture.StartTime).total_seconds())
-        up_trafic = utils.octet_to_string(total_trafic["Up"])
-        down_trafic = utils.octet_to_string(total_trafic["Down"])
+        up_trafic = utils.octet_to_string(total_trafic["Up"], 2)
+        down_trafic = utils.octet_to_string(total_trafic["Down"], 2)
 
         if(total_trafic["Up"] > 0):
             up_down_ratio = round(total_trafic["Down"]/total_trafic["Up"], 3)
@@ -315,7 +400,7 @@ def saved_capture(id):
 
             score_details = {
                 "Score": score,
-                "Bandwidth": utils.octet_to_string(nutriscoreDebit) + "/s",
+                "Bandwidth": utils.octet_to_string(nutriscoreDebit, 2) + "/s",
                 "Diversity": nutriscoreDiversity,
                 "NumberOfDeconnection": len(timeBetweenConnections),
                 "MeanDeconnectionTime": mean_deconnection_time

@@ -51,6 +51,15 @@
             </div>
             {% endif %}
             <div class="row mb-3">
+                <div class="col-auto">
+                    <a href="export_database" class="btn btn-secondary">Export database</a>
+                </div>
+                <div class="col-auto">
+                    <button type="button" class="btn btn-imt-green" data-bs-toggle="modal" data-bs-target="#modalImportDatabase">Import database</button>
+                </div>
+            </div>
+
+            <div class="row mb-3">
                 <div class="col">
                     <div class="card shadow mb-3">
                         <div class="card-body border-start border-imt-darkblue border-5 rounded-start">
@@ -285,6 +294,28 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                         <button type="submit" class="btn btn-imt-green">Validate</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalImportDatabase" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form method="post" action="import_database" enctype="multipart/form-data">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Import database</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="input-group mb-3">
+                            <input type="file" class="form-control" id="pandore_save_file" name="pandore_save_file" accept=".psave">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-imt-green">Import</button>
                     </div>
                 </form>
             </div>
