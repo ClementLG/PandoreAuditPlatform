@@ -47,7 +47,9 @@ class PandoreSender:
     def create_capture(self, name, start_time, end_time, description, interface, connection_type):
         self.cursor.callproc('CreateCapture', [name, start_time, end_time, description, interface, connection_type, 10])
         self.conn.commit()
-        return self.get_capture_id(name, start_time, end_time, description, interface, connection_type)
+        for result in self.cursor.stored_results():
+            for res in result.fetchall():
+                return int(res[0])
 
     def update_capture(self, id, name, start_time, end_time, description, interface, connection_type):
         self.cursor.callproc('UpdateCapture', [id, name, start_time, end_time, description, interface, connection_type, 10])
@@ -73,7 +75,7 @@ class PandoreSender:
         self.conn.commit()
 
     def create_server_dns(self, ip, domain_name):
-        self.cursor.callproc('CreateServerString', [ip, None, domain_name])
+        self.cursor.callproc('CreateServerString', [ip, domain_name])
         self.conn.commit()
 
     def path_blank_end_time(self, time):

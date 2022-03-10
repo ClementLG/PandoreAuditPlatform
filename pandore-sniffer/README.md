@@ -59,6 +59,7 @@ Environnement variable (-e option) can be used :
 | ------ | ------ |
 | PANDORE_AUDITED_INTERFACE| Interface to sniff
 | PANDORE_DEVICE_NETWORK| Audited device network (use in filter)
+| PANDORE_DEVICE_NETWORK_IPv6| Audited device network (use in filter)
 | PANDORE_CUSTOM_FILTER| [Custom Filter](https://biot.com/capstats/bpf.html)
 | PANDORE_DB_HOST| DB server address
 | PANDORE_DB_PORT| DB server port
@@ -123,6 +124,17 @@ If you want, you can only update one or several field(s):
     }
 }
 ```
+
+IPv6 is supported. You are able tu use only Ipv6, Ipv4, or both :
+```
+{
+    "network": {
+        "DEVICE_NETWORK": "192.168.10.0/24"
+        "DEVICE_NETWORK_IPv6": "2a01:cb08:8615:1100:19ec:d30b:d159:8595/128"
+    }
+}
+```
+note: To specify a host only, just use a /32 or /128.
 
 - **[POST]** _/api/start_: Start a sniffer (no JSON to send, only use POST method). Multiple sniffer can be launched at the same time. Sniffer is launched using the last configuration (The config you get usinf /api/configuration)
 

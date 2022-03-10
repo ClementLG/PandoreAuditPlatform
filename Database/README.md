@@ -27,7 +27,7 @@ To run the container, use the following command :
 docker run -p 3306:3306/tcp --name pandoredb pandore-db
 ```
 
-4) To bind the data from the database (in the container) to a directory on the host you can use the following command :
+4) _Optionnal_ - To bind the data from the database (in the container) to a directory on the host you can use the following command :
 
 ```
 docker run -v /my/own/datadir:/var/lib/mysql -p 3306:3306/tcp --name pandoredb pandore-db
