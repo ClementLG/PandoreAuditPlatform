@@ -300,7 +300,11 @@ END//
 
 CREATE PROCEDURE DeleteCaptureByID(IN ID INT)
 BEGIN
-	DELETE FROM Capture_Request WHERE CaptureRequest_Capture = ID;
+	SET @NB_ROWS = (SELECT COUNT(*) FROM Capture_Request WHERE CaptureRequest_Capture = ID);
+	WHILE @NB_ROWS != 0 DO 
+		DELETE FROM Capture_Request WHERE CaptureRequest_Capture = ID ORDER BY CaptureRequest_ID LIMIT 1000;
+		SET @NB_ROWS = (SELECT COUNT(*) FROM Capture_Request WHERE CaptureRequest_Capture = ID);
+   	END WHILE;
 	DELETE FROM Capture WHERE Capture_ID = ID;
 END//
 
